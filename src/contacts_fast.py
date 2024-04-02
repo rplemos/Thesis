@@ -182,7 +182,10 @@ contacts = {'ALA:N':[0, 0, 0, 0, 1, 0],
 # 6 - Atractive: positive=>negative ou negative=>positive
 # 7 - salt_bridge: positive=>negative ou negative=>positive
 
-# TODO: implement a way to reset the residue_pairs set when the chain changes
+# TODO: 
+# - implement a way to reset the residue_pairs set when the chain changes
+# - implement alpha-helix skipping to avoid false positives (3 residues minimum?) 
+#       this is kinda done  
 def fast_contacts(protein1, protein2):
     start = timer()
     categories = {
@@ -198,7 +201,8 @@ def fast_contacts(protein1, protein2):
     contact_conditions = {
         'disulfide_bond': lambda name1, name2: name1 == "CYS:SG" and name2 == "CYS:SG",
         'aromatic': lambda name1, name2: contacts[name1][1] == 1 and contacts[name2][1] == 1,
-        'hydrogen_bond': lambda name1, name2: (contacts[name1][4] == 1 and contacts[name2][5] == 1) or (contacts[name1][5] == 1 and contacts[name2][4] == 1),
+        #'hydrogen_bond': lambda name1, name2: (contacts[name1][4] == 1 and contacts[name2][5] == 1) or (contacts[name1][5] == 1 and contacts[name2][4] == 1),
+        'hydrogen_bond': lambda name1, name2: ((contacts[name1][4] == 1 and contacts[name2][5] == 1) or (contacts[name1][5] == 1 and contacts[name2][4] == 1)) and (residue2.resnum - residue1.resnum >= 3),       
         'hydrophobic': lambda name1, name2: contacts[name1][0] == 1 and contacts[name2][0] == 1,
         'repulsive': lambda name1, name2: (contacts[name1][2] == 1 and contacts[name2][2] == 1) or (contacts[name1][3] == 1 and contacts[name2][3] == 1),
         'attractive': lambda name1, name2: (contacts[name1][2] == 1 and contacts[name2][3] == 1) or (contacts[name1][3] == 1 and contacts[name2][2] == 1),
@@ -208,36 +212,65 @@ def fast_contacts(protein1, protein2):
     residues1 = list(protein1.get_residues())
     residues2 = list(protein2.get_residues())
     distances = []
+    
+    # FOR GETTING ALL THE CHAINS ON THE REFERENCE PROTEIN, AND SETTING TO COMPARE ONLY TO THEM
+    # chains = []
+    # for chain in protein1.chains:
+    #     chains.append(chain.id)
+    # print(chains)
+    
+    chains = ["A"] # include which chains to analyze
+    
     #residue_pairs = set()
     
     for i in range(len(residues1)):
         for j in range(i+1, len(residues2)):
             residue1, residue2 = residues1[i], residues2[j]
             #residue_pair = tuple(sorted([residue1.resnum, residue2.resnum]))
-            if residue1.resnum != residue2.resnum:
-                ca1, ca2 = residue1.atoms[1], residue2.atoms[1] # alpha carbons
-                distance = math.sqrt(((ca1.x - ca2.x)**2) + ((ca1.y - ca2.y)**2) + ((ca1.z - ca2.z)**2))
-                if distance > 20: # define better the cutoff here
-                    #residue_pairs.add(residue_pair)
-                    continue # skips the current residue 2
-                for atom1 in residue1.atoms:
-                    for atom2 in residue2.atoms:
-                        name1 = f"{atom1.residue.resname}:{atom1.atomname}"
-                        name2 = f"{atom2.residue.resname}:{atom2.atomname}"
-                        if name1 in contacts and name2 in contacts:
-                            if atom1.atomname != 'CA' and atom2.atomname != 'CA':
-                                distance = math.sqrt(((atom1.x - atom2.x)**2) + ((atom1.y - atom2.y)**2) + ((atom1.z - atom2.z)**2))
-                            if distance < 6:
-                                for contact_type, distance_range in categories.items():
-                                    if distance_range[0] <= distance <= distance_range[1]:
-                                        if contact_conditions[contact_type](name1, name2):
-                                            to_append = [f"{protein1.id}:{residue1.chain.id}", f"{residue1.resnum}{name1}", f"{protein2.id}:{residue2.chain.id}", f"{residue2.resnum}{name2}", distance, contact_type]
-                                            distances.append(to_append)       
+            if residue1.chain.id in chains and residue2.chain.id in chains:
+                if residue1.resnum != residue2.resnum:
+                    ca1, ca2 = residue1.atoms[1], residue2.atoms[1] # alpha carbons
+                    distance = math.dist((ca1.x, ca1.y, ca1.z), (ca2.x, ca2.y, ca2.z))
+                    if distance > 20: # define better the cutoff here
+                        #residue_pairs.add(residue_pair)
+                        continue # skips the current residue 2
+                    for atom1 in residue1.atoms:
+                        for atom2 in residue2.atoms:
+                            name1 = f"{atom1.residue.resname}:{atom1.atomname}"
+                            name2 = f"{atom2.residue.resname}:{atom2.atomname}"
+                            if name1 in contacts and name2 in contacts:
+                                if atom1.atomname != 'CA' and atom2.atomname != 'CA':
+                                    distance = math.dist((atom1.x, atom1.y, atom1.z), (atom2.x, atom2.y, atom2.z))
+                                if distance < 6:
+                                    for contact_type, distance_range in categories.items():
+                                        if distance_range[0] <= distance <= distance_range[1]:
+                                            if contact_conditions[contact_type](name1, name2):
+                                                to_append = [f"{protein1.id}:{residue1.chain.id}", f"{residue1.resnum}{name1}", 
+                                                             f"{protein2.id}:{residue2.chain.id}", f"{residue2.resnum}{name2}", 
+                                                             distance, contact_type, atom1, atom2]
+                                                distances.append(to_append)       
     
     end = timer()
     print(f"Time elapsed: {end - start}\n")
-    
+
     return distances
+
+def avd(distances1, distances2):
+    for distance1 in distances1:
+        p1 = distance1[6]
+        p2 = distance1[7]
+        for distance2 in distances2:
+            q1 = distance2[6]
+            q2 = distance2[7]
+            d1 = math.dist((p1.x, p1.y, p1.z), (q1.x, q1.y, q1.z))
+            d2 = math.dist((p2.x, p2.y, p2.z), (q2.x, q2.y, q2.z))
+            d3 = math.dist((p1.x, p1.y, p1.z), (q2.x, q2.y, q2.z))
+            d4 = math.dist((p2.x, p2.y, p2.z), (q1.x, q1.y, q1.z))
+            avd1 = (d1 + d2) / 2
+            avd2 = (d3 + d4) / 2
+            avd = min(avd1, avd2)
+            if avd < 0.1:
+                print(avd, distance1[:6], distance2[:6])
 
 def show_contacts(distances):
     # Initialize a dictionary to store the counts for each category
@@ -252,14 +285,14 @@ def show_contacts(distances):
 
     for category, count in sorted_categories:
         print(f"Number of '{category}' occurrences:", count)
-        if count <= 10:
+        if count <= 0:
             print(f"All entries for '{category}':")
             for entry in distances:
                 if entry[5] == category:
                     print("\t",entry)
-        print()  # Add a blank line between categories
+        #print()  # Add a blank line between categories
 
-    print(len(distances))    
+    print(f"Total number of contacts: {len(distances)}")    
 
 
 # For testing without main:
