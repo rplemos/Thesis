@@ -1,0 +1,10 @@
+venv/
+*.pyc
+*.pdb
+*.txt
+pdbs/
+txts/
+.stfolder/
+/src/tmalignoutputs/
+/src/TMAlign
+TMAlign
