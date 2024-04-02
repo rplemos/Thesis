@@ -32,15 +32,17 @@ def tmalign_superimpose(pdb_files, ref_pdb, rmsd):
     
     # check which option to use
     #ref_name = os.path.basename(ref_pdb)
-    ref_name = ref_pdb
-    
+    ref_name = os.path.basename(ref_pdb)    
     outputs = [ref_name] # starts the output with the reference (samples will be added after their processing)
-    output_dir = "./tmalignoutputs"
+    output_dir = "./src/tmalignoutputs"
     
     if not os.path.exists(output_dir): # creates output folder if it doesn't exist
         os.mkdir(output_dir)
+    print(f"Comparing to: {ref_name}")
     for sample in pdb_files:
         sample_name = os.path.basename(sample)
+        if sample_name == ref_name: # exclude same protein comparison
+            continue
         output_name = f"{output_dir}/{sample_name.split('.')[0]}_aligned"
         
         # runs TMAlign (current sample vs. reference protein)
