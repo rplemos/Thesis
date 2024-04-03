@@ -2,7 +2,7 @@ from classes import Protein, Chain, Residue, Atom
 import sys
 import os
 
-# not used!
+# not used! instead, use sysfunctions.cl_parse()
 def open_pdbs():
     """
     Gets PDB files from command line parameters and handles errors.
@@ -79,8 +79,14 @@ def parse_pdb(pdb_files):
                         current_chain.residues.append(current_residue)
 
                     atom = Atom()  # each line is a new atom anyway
-                    atom.set_atom_info(line[12:16].replace(" ", ""),
-                                        float(line[30:38]), float(line[38:46]), float(line[46:54]))
+                    
+                    atomname = line[12:16].replace(" ", "")
+                    x, y, z = float(line[30:38]), float(line[38:46]), float(line[46:54])
+                    
+                    if atomname == "OXT": # OXT is the C-terminal Oxygen atom. However, it exhibits the same properties of any Oxygen
+                        atomname = atomname.replace("OXT","O")
+                        
+                    atom.set_atom_info(atomname, x, y, z)
                     atom.residue = current_residue  # Set the parent residue
                     current_residue.atoms.append(atom)
 
