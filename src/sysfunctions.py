@@ -20,12 +20,13 @@ def cl_parse():
 
     try:
         parser = argparse.ArgumentParser(description='Process PDB files and align atoms.')
-        parser.add_argument('-mode', required=False, default='TMAlign', help='Select Program to Run the Alignments. Default = BioPython')
+        parser.add_argument('-mode', required=False, default='TMAlign', help='Select Program to Run the Alignments. Default = TMAlign')
         parser.add_argument('-pdb', nargs='+', required=True, type=validate_file, help='List of PDB files (at least one required)')
         parser.add_argument('-ref', required=True, type=validate_file, help='Reference PDB file')
         parser.add_argument('-s', '--start_id', type=int, required=False, default=0, help='Start ID for atom alignment. Only for BioPython mode. Default = 0')
         parser.add_argument('-e', '--end_id', type=int, required=False, default=100, help='End ID for atom alignment. Only for BioPython mode. Default = 100')
         parser.add_argument('-rmsd', type=float, required=False, default=999, help='Sets the RMSD cutoff value. Only for TMAlign mode')
+        parser.add_argument('-avd', '--avd_cutoff', type=float, required=False, default=1.0, help='Sets the AVD cutoff value. Default = 1.0')
 
         args = parser.parse_args()
 
@@ -36,6 +37,7 @@ def cl_parse():
         start_id = args.start_id
         end_id = args.end_id
         rmsd_value = args.rmsd
+        avd_cutoff = args.avd_cutoff
         
         if mode not in modes:
             raise ValueError("Invalid Mode!")
@@ -67,7 +69,7 @@ def cl_parse():
         print(f"An unexpected error occurred: {str(e)}")
         sys.exit(1)
         
-    return mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd_value
+    return mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd_value, avd_cutoff
         
 def validate_file(value):
     """
