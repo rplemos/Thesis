@@ -47,6 +47,7 @@ class Residue:
         self.resname = None
         self.atoms = []
         self.chain = None
+        self.ring = False
 
     def set_res_info(self, resnum, resname):
         self.resnum = resnum
