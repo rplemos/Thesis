@@ -59,7 +59,7 @@ def tmalign_superimpose(pdb_files, ref_pdb, rmsd):
                 os.remove(file)
         else: # RMSD is lower than the cutoff
             outputs.append(f"{output_name}_rotate.pdb")
-            print(f"RMSD value for file '{sample_name}': {rmsd_value[0]}. PDB Files created!")
+            print(f"RMSD value for file '{sample_name}': {rmsd_value[0]}.\t PDB Files created!")
             files_to_delete = glob.glob(os.path.join(output_name + '*'))
             # keeps only the .pdb files
             files_to_delete = [file for file in files_to_delete if not file.endswith(".pdb")]
