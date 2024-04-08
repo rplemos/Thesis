@@ -10,9 +10,6 @@ class Protein:
         else:
             self.title += " " + title.strip()
 
-    def set_id(self, id):
-        self.id = id
-
     def get_chains(self):
         for chain in self.chains:
             yield chain
@@ -33,9 +30,6 @@ class Chain:
         self.id = None
         self.residues = []
 
-    def set_id(self, id):
-        self.id = id
-
     def get_residues(self):
         for residue in self.residues:
             yield residue
@@ -48,10 +42,7 @@ class Residue:
         self.atoms = []
         self.chain = None
         self.ring = False
-
-    def set_res_info(self, resnum, resname):
-        self.resnum = resnum
-        self.resname = resname
+        self.normal_vector = None
 
     def get_atoms(self):
         for atom in self.atoms:
