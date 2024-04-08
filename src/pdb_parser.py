@@ -1,4 +1,5 @@
 from classes import Protein, Chain, Residue, Atom
+import numpy as np
 import sys
 import os
 
@@ -65,7 +66,7 @@ def parse_pdb(pdb_files):
                 line = line.strip()
 
                 if line.startswith("HEADER"):
-                    current_protein.set_id(line[62:])
+                    current_protein.id = line[62:]
                 elif line.startswith("TITLE"):
                     current_protein.set_title(line[10:])
                 elif line.startswith("ATOM"):
@@ -78,12 +79,13 @@ def parse_pdb(pdb_files):
 
                     if current_chain is None or current_chain.id != chain_id:  # new chain
                         current_chain = Chain()
-                        current_chain.set_id(chain_id)
+                        current_chain.id = chain_id
                         current_protein.chains.append(current_chain)
 
                     if current_residue is None or current_residue.resnum != resnum:  # new residue
                         current_residue = Residue()
-                        current_residue.set_res_info(resnum, resname)
+                        current_residue.resnum = resnum
+                        current_residue.resname = resname
                         current_residue.chain = current_chain  # Set the parent chain
                         current_chain.residues.append(current_residue)
                                                 
@@ -102,18 +104,16 @@ def parse_pdb(pdb_files):
                     
                     # checks if the residue is aromatic and if the atoms are complete (all populated)
                     if current_residue.resname in stacking and len(current_residue.atoms) == stacking[current_residue.resname][0]: 
-                        print(current_residue.resnum, current_residue.resname, current_residue.chain.id)
-                        ring_atom = centroid(current_residue)
-                        current_residue.atoms.append(ring_atom)
+                        #print(current_residue.resnum, current_residue.resname, current_residue.chain.id)
+                        centroid_atom = centroid(current_residue)
+                        current_residue.atoms.append(centroid_atom)
                         current_residue.ring = True
+                        # print(centroid_atom.x, centroid_atom.y, centroid_atom.z)
                         
-                        residue_atoms = np.array([[atom.x, atom.y, atom.z] for atom in current_residue.atoms[5:-1]])
-                        normal_vector = angle2(residue_atoms)
-                        normal_vector2 = np.array([-0.32103048, 0.48111998, 0.81575915])
+                        ring_atoms = np.array([[atom.x, atom.y, atom.z] for atom in current_residue.atoms[5:-1]]) # ignores [N, CA, C, O] and [RNG] atoms
+                        normal_vector = calc_normal_vector(ring_atoms)
+                        current_residue.normal_vector = normal_vector
 
-                        angle = calculate_angle_between_vectors(normal_vector, normal_vector2)
-                        print(angle)
-                                        
                 elif line.startswith("END"):  # finishes and resets everything for the new protein
                     proteins.append(current_protein)
                     current_protein = None
@@ -135,27 +135,18 @@ def centroid(residue):
     centroid_y = sum_y / size
     centroid_z = sum_z / size
     
-    ring_atom = Atom()
-    ring_atom.set_atom_info("RNG", centroid_x, centroid_y, centroid_z)
-    ring_atom.residue = residue
+    centroid_atom = Atom()
+    centroid_atom.set_atom_info("RNG", centroid_x, centroid_y, centroid_z)
+    centroid_atom.residue = residue
         
-    return ring_atom
+    return centroid_atom
 
-import numpy as np
-
-def angle2 (ring_atoms):
-    centroid = np.mean(ring_atoms, axis = 0)
-    centered_ring_atoms = ring_atoms - centroid
+def calc_normal_vector(ring_atoms):
+    centroid = np.mean(ring_atoms, axis = 0) # axis=0 -> mean through the columns
+    centered_ring_atoms = ring_atoms - centroid # normalizes to origin
     
     # Use singular value decomposition (SVD) to calculate the plane
-    _, _, vh = np.linalg.svd(centered_ring_atoms)
-    normal_vector = vh[2]  # The normal vector is the last row of the V matrix
+    _, _, vh = np.linalg.svd(centered_ring_atoms) # vh = V^T
+    normal_vector = vh[2]  # The normal vector is the last row of the V^T matrix
     
     return normal_vector
-    
-def calculate_angle_between_vectors(vector1, vector2):
-    dot_product = np.dot(vector1, vector2)
-    magnitude_product = np.linalg.norm(vector1) * np.linalg.norm(vector2)
-    angle = np.arccos(dot_product / magnitude_product)    
-    
-    return np.degrees(angle)
