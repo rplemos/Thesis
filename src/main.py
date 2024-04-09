@@ -1,9 +1,9 @@
+import os
+import sys
 import pdb_parser
 import superimposers
 import sysfunctions
 import contacts_fast
-import os
-import sys
 
 def main():
     mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd, avd_cutoff = sysfunctions.cl_parse()
@@ -30,8 +30,8 @@ def main():
         if ref_distance is None:
             ref_distance = distances
         else:
-            avd, average_avd, contact_matches = contacts_fast.avd(ref_distance, distances, avd_cutoff)
-            if avd is not None:
+            avd_list, average_avd, contact_matches = contacts_fast.avd(ref_distance, distances, avd_cutoff)
+            if avd_list is not None:
                 print(f"Average AVD for {ref_protein} and {protein.id}: {average_avd}\nNumber of contact matches found: {contact_matches}\n")
             else:
                 print(f"No contact matches found between {ref_protein} and {protein.id}.\nTry increasing the cutoff value.\n")     
