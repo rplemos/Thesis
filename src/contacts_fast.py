@@ -1,6 +1,6 @@
 import math
-import numpy as np
 from timeit import default_timer as timer
+import numpy as np
 
 # 'RES:ATOM':	[	Hydrophobic,	Aromatic,	Positive,	Negative,	Donor,	Acceptor	]
 # 'ALA:CA':		[	0|1,			0|1,		0|1,		0|1,		0|1,	0|1			]
@@ -216,20 +216,24 @@ def fast_contacts(protein1, protein2):
     # FOR GETTING ALL THE CHAINS ON THE REFERENCE PROTEIN, AND SETTING TO COMPARE ONLY TO THEM
     chains = [chain.id for chain in protein1.chains]
     print(f"Chains to be analyzed: {chains}")
-        
+    
+    big_ones = ["ARG", "LYS", "GLU"]
+    
     #residue_pairs = set()
-    for i in range(len(residues1)):
-        residue1 = residues1[i]
-        for j in range(i+1, len(residues2)):
+    for i, residue1 in enumerate(residues1):
+        for j, residue2 in enumerate(residues2[i+1:], start=i+1):
+            residue1 = residues1[i]
             residue2 = residues2[j] 
             #residue_pair = tuple(sorted([residue1.resnum, residue2.resnum]))
             
             if residue1.chain.id in chains and residue2.chain.id in chains:
                 ca1, ca2 = residue1.atoms[1], residue2.atoms[1] # alpha carbons
                 distance_ca = math.dist((ca1.x, ca1.y, ca1.z), (ca2.x, ca2.y, ca2.z))
-                if distance_ca > 20: # define better the cutoff here
+                if distance_ca > 20:
                     #residue_pairs.add(residue_pair)
                     continue # skips the current residue 2
+                elif residue1.resname not in big_ones and residue2.resname not in big_ones and distance_ca > 13:
+                    continue
                 
                 if residue1.ring and residue2.ring: # two aromatic residues
                     ring1, ring2 = residue1.atoms[-1], residue2.atoms[-1] # RNG atoms
@@ -254,9 +258,9 @@ def fast_contacts(protein1, protein2):
                                 for contact_type, distance_range in categories.items():
                                     if distance_range[0] <= distance <= distance_range[1]:
                                         if contact_conditions[contact_type](name1, name2):
-                                            if distance_ca > 19: # checking the weird distant ones
-                                                pass
-                                                #print(distance, distance_ca, residue1.chain.id, residue1.resnum, name1, residue2.chain.id, residue2.resnum, name2)
+                                            if distance_ca > 14: # checking the weird distant ones
+                                                #pass
+                                                print(distance, distance_ca, residue1.chain.id, residue1.resnum, name1, residue2.chain.id, residue2.resnum, name2)
                                             to_append = [f"{protein1.id}:{residue1.chain.id}", f"{residue1.resnum}{name1}", 
                                                             f"{protein2.id}:{residue2.chain.id}", f"{residue2.resnum}{name2}", 
                                                             distance, contact_type, atom1, atom2]
@@ -279,7 +283,7 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff):
         for contact2 in contact_list_protein2:
             q1 = contact2[6]
             q2 = contact2[7]
-            
+
             d1 = math.dist((p1.x, p1.y, p1.z), (q1.x, q1.y, q1.z)) # p1 x q1
             d2 = math.dist((p2.x, p2.y, p2.z), (q2.x, q2.y, q2.z)) # p2 x q2
             d3 = math.dist((p1.x, p1.y, p1.z), (q2.x, q2.y, q2.z)) # p1 x q2
