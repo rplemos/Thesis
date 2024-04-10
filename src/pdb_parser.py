@@ -104,13 +104,15 @@ def parse_pdb(pdb_files):
                     
                     # checks if the residue is aromatic and if the atoms are complete (all populated)
                     if current_residue.resname in stacking and len(current_residue.atoms) == stacking[current_residue.resname][0]: 
-                        #print(current_residue.resnum, current_residue.resname, current_residue.chain.id)
+                        ring_atoms = np.array([[atom.x, atom.y, atom.z] for atom in current_residue.atoms[5:]]) # ignores [N, CA, C, O] and [RNG] atoms
                         centroid_atom = centroid(current_residue)
-                        current_residue.atoms.append(centroid_atom)
+                        centroid_atom2 = centroid2(current_residue, ring_atoms)
+                        current_residue.atoms.append(centroid_atom2)
                         current_residue.ring = True
-                        # print(centroid_atom.x, centroid_atom.y, centroid_atom.z)
-                        
-                        ring_atoms = np.array([[atom.x, atom.y, atom.z] for atom in current_residue.atoms[5:-1]]) # ignores [N, CA, C, O] and [RNG] atoms
+                        # print("two atoms:", current_residue.resname, current_residue.resnum, centroid_atom.x, centroid_atom.y, centroid_atom.z)
+                        # print("all atoms:", current_residue.resname, current_residue.resnum, centroid_atom2.x, centroid_atom2.y, centroid_atom2.z)
+                        # print()
+
                         normal_vector = calc_normal_vector(ring_atoms)
                         current_residue.normal_vector = normal_vector
 
@@ -139,6 +141,13 @@ def centroid(residue):
     centroid_atom.set_atom_info("RNG", centroid_x, centroid_y, centroid_z)
     centroid_atom.residue = residue
         
+    return centroid_atom
+
+def centroid2(residue, ring_atoms):
+    centroid = np.mean(ring_atoms, axis = 0)
+    centroid_atom = Atom()
+    centroid_atom.set_atom_info("RNG", centroid[0], centroid[1], centroid[2])
+    centroid_atom.residue = residue
     return centroid_atom
 
 def calc_normal_vector(ring_atoms):
