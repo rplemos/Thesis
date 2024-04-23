@@ -87,24 +87,26 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff, match_list_new):
     start = timer()
     
     match_list = []
+    
     for contact1 in contact_list_protein1:
-        p1 = contact1.atom1
-        p2 = contact1.atom2
+        p1_coords = contact1.atom1.x, contact1.atom1.y, contact1.atom1.z
+        p2_coords = contact1.atom2.x, contact1.atom2.y, contact1.atom2.z
+        
         for contact2 in contact_list_protein2:
-            q1 = contact2.atom1
-            q2 = contact2.atom2
-
-            d1 = dist((p1.x, p1.y, p1.z), (q1.x, q1.y, q1.z)) # p1 x q1
-            d2 = dist((p2.x, p2.y, p2.z), (q2.x, q2.y, q2.z)) # p2 x q2
-            d3 = dist((p1.x, p1.y, p1.z), (q2.x, q2.y, q2.z)) # p1 x q2
-            d4 = dist((p2.x, p2.y, p2.z), (q1.x, q1.y, q1.z)) # p2 x q1
+            q1_coords = contact2.atom1.x, contact2.atom1.y, contact2.atom1.z
+            q2_coords = contact2.atom2.x, contact2.atom2.y, contact2.atom2.z
+            
+            d1 = dist(p1_coords, q1_coords)  # p1 x q1
+            if d1 > (cutoff * 3):
+                continue
+            d2 = dist(p2_coords, q2_coords)  # p2 x q2
+            d3 = dist(p1_coords, q2_coords)  # p1 x q2
+            d4 = dist(p2_coords, q1_coords)  # p2 x q1
             
             avd = min(((d1 + d2)/2),((d3 + d4)/2))
             
             if avd < cutoff:
-                
                 match = Match(avd, contact1.to_list(), contact2.to_list())
-                
                 if match not in match_list_new:
                     match_list.append(match)
     
@@ -124,17 +126,19 @@ def new_avd(contact_list_protein1, contact_list_protein2, cutoff):
     start = timer()
     
     match_list = []
+        
     for contact1 in contact_list_protein1:
-        p1 = contact1.atom1
-        p2 = contact1.atom2
+        p1_coords = contact1.atom1.x, contact1.atom1.y, contact1.atom1.z
+        p2_coords = contact1.atom2.x, contact1.atom2.y, contact1.atom2.z
+        
         for contact2 in contact_list_protein2:
-            q1 = contact2.atom1
-            q2 = contact2.atom2
-
-            d1 = dist((p1.x, p1.y, p1.z), (q1.x, q1.y, q1.z)) # p1 x q1
+            q1_coords = contact2.atom1.x, contact2.atom1.y, contact2.atom1.z
+            q2_coords = contact2.atom2.x, contact2.atom2.y, contact2.atom2.z
+            
+            d1 = dist(p1_coords, q1_coords)  # p1 x q1
             if d1 > (cutoff * 3):
                 continue
-            d2 = dist((p2.x, p2.y, p2.z), (q2.x, q2.y, q2.z)) # p2 x q2
+            d2 = dist(p2_coords, q2_coords)  # p2 x q2
 
             avd = ((d1 + d2)/2)
             
