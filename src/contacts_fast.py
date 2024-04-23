@@ -2,7 +2,7 @@ from math import dist
 from timeit import default_timer as timer
 from numpy import dot, arccos, degrees
 from numpy.linalg import norm
-from classes import Contact
+from classes import Contact, Match
 import conditions
 
 # TODO: 
@@ -83,11 +83,10 @@ def fast_contacts(protein1, protein2):
     print(f"Time elapsed: {end - start}\n")
     return contacts
 
-def avd(contact_list_protein1, contact_list_protein2, cutoff, avd_list_new):
-    
+def avd(contact_list_protein1, contact_list_protein2, cutoff, match_list_new):
     start = timer()
     
-    avd_list = []
+    match_list = []
     for contact1 in contact_list_protein1:
         p1 = contact1.atom1
         p2 = contact1.atom2
@@ -103,26 +102,28 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff, avd_list_new):
             avd = min(((d1 + d2)/2),((d3 + d4)/2))
             
             if avd < cutoff:
-                contact1_fullinfo, contact2_fullinfo = contact1.to_list(), contact2.to_list()
-                if ([avd, contact1_fullinfo, contact2_fullinfo]) not in avd_list_new:
-                    avd_list.append([avd, contact1_fullinfo, contact2_fullinfo])
+                
+                match = Match(avd, contact1.to_list(), contact2.to_list())
+                
+                if match not in match_list_new:
+                    match_list.append(match)
     
-    if len(avd_list) == 0:
+    if len(match_list) == 0:
         return None, None, None
     
-    average_avd = sum(single_avd[0] for single_avd in avd_list) / len(avd_list)
-    contact_matches = len(avd_list)
+    average_avd = sum(single_match.avd for single_match in match_list) / len(match_list)
+    contact_matches = len(match_list)
 
     end = timer()
     print(f"AVD Time elapsed (old): {end - start}\n")
 
-    return avd_list, average_avd, contact_matches
+    return match_list, average_avd, contact_matches
 
 def new_avd(contact_list_protein1, contact_list_protein2, cutoff):
     
     start = timer()
     
-    avd_list = []
+    match_list = []
     for contact1 in contact_list_protein1:
         p1 = contact1.atom1
         p2 = contact1.atom2
@@ -137,20 +138,20 @@ def new_avd(contact_list_protein1, contact_list_protein2, cutoff):
 
             avd = ((d1 + d2)/2)
             
-            if avd < cutoff:
-                avd_list.append([avd, contact1.to_list(), contact2.to_list()])
-                #avd_list.append([avd, contact1.fullinfo, contact2.fullinfo])
-    
-    if len(avd_list) == 0:
+            if avd < cutoff: # means that it's a match
+                match = Match(avd, contact1.to_list(), contact2.to_list())
+                match_list.append(match)
+        
+    if len(match_list) == 0:
         return None, None, None
     
-    average_avd = sum(single_avd[0] for single_avd in avd_list) / len(avd_list)
-    contact_matches = len(avd_list)
+    average_avd = sum(single_avd.avd for single_avd in match_list) / len(match_list)
+    contact_matches = len(match_list)
 
     end = timer()
     print(f"AVD Time elapsed (new): {end - start}\n")
 
-    return avd_list, average_avd, contact_matches
+    return match_list, average_avd, contact_matches
 
 def show_contacts(distances):
     category_counts = {}
