@@ -6,7 +6,6 @@ from classes import Contact
 import conditions
 
 # TODO: 
-# - implement a way to reset the residue_pairs set when the chain changes
 # - implement alpha-helix skipping to avoid false positives (3 residues minimum?) 
 #       this is kinda done  
 def fast_contacts(protein1, protein2):
@@ -22,18 +21,14 @@ def fast_contacts(protein1, protein2):
     
     big_ones = ["ARG", "LYS", "GLU", "PHE"]
     
-    #residue_pairs = set()
     for i, residue1 in enumerate(residues1):
         for j, residue2 in enumerate(residues2[i+1:], start=i+1):
             residue1 = residues1[i]
             residue2 = residues2[j] 
-            #residue_pair = tuple(sorted([residue1.resnum, residue2.resnum]))
-            
             if residue1.chain.id in chains and residue2.chain.id in chains:
                 ca1, ca2 = residue1.atoms[1], residue2.atoms[1] # alpha carbons
                 distance_ca = dist((ca1.x, ca1.y, ca1.z), (ca2.x, ca2.y, ca2.z))
                 if distance_ca > 20:
-                    #residue_pairs.add(residue_pair)
                     continue # skips the current residue 2
                 elif residue1.resname not in big_ones and residue2.resname not in big_ones and distance_ca > 13:
                     # print(residue1.chain.id, residue1.resname, residue1.resnum, residue1.chain.id, residue2.resname, residue2.resnum, distance_ca)
@@ -69,7 +64,7 @@ def fast_contacts(protein1, protein2):
                                 distance = dist((atom1.x, atom1.y, atom1.z), (atom2.x, atom2.y, atom2.z))
                             if distance <= 6: # max distance for contacts
                                 for contact_type, distance_range in conditions.categories.items():
-                                    if contact_type == 'hydrogen_bond' and (residue2.resnum - residue1.resnum < 3): # skips alpha-helix
+                                    if contact_type == 'hydrogen_bond' and (residue2.resnum - residue1.resnum < 3): # skips alpha-helix for h-bonds
                                         continue
                                     if distance_range[0] <= distance <= distance_range[1]:
                                         if conditions.contact_conditions[contact_type](name1, name2):
@@ -84,7 +79,6 @@ def fast_contacts(protein1, protein2):
                         else: # for control over non-standard atom names
                             pass
                             #print(f"Unknown atom: {name1} or {name2}")      
-    
     end = timer()
     print(f"Time elapsed: {end - start}\n")
     return contacts
