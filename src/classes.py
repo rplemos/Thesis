@@ -62,3 +62,22 @@ class Atom:
         self.x = x
         self.y = y
         self.z = z
+
+
+class Contact:
+    def __init__(self, idchain1, residueatom1, idchain2, residueatom2, distance, type, atom1, atom2):
+        self.idchain1 = idchain1
+        self.residueatom1 = residueatom1
+        self.idchain2 = idchain2
+        self.residueatom2 = residueatom2
+        self.distance = distance
+        self.type = type
+        self.atom1 = atom1
+        self.atom2 = atom2
+        #self.fullinfo = idchain1, residueatom1, idchain2, residueatom2, distance, type
+
+        
+    def to_list(self):
+        return [self.idchain1, self.residueatom1, self.idchain2, self.residueatom2,
+            self.distance, self.type]
+        
