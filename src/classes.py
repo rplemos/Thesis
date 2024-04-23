@@ -74,10 +74,21 @@ class Contact:
         self.type = type
         self.atom1 = atom1
         self.atom2 = atom2
-        #self.fullinfo = idchain1, residueatom1, idchain2, residueatom2, distance, type
 
-        
-    def to_list(self):
+    def to_list(self): # all info besides the atom objects
         return [self.idchain1, self.residueatom1, self.idchain2, self.residueatom2,
             self.distance, self.type]
         
+
+class Match:
+    def __init__(self, avd, contact1, contact2):
+        self.avd = avd
+        self.contact1 = contact1
+        self.contact2 = contact2
+        
+    def __eq__(self, other):
+        if isinstance(other, Match):
+            return (self.avd == other.avd and
+                    self.contact1 == other.contact1 and
+                    self.contact2 == other.contact2)
+        return False
