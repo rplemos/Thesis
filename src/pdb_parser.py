@@ -1,48 +1,14 @@
 from classes import Protein, Chain, Residue, Atom
-import numpy as np
-import sys
-import os
+from numpy import mean, array
+from numpy.linalg import svd
+  
 
-    
 stacking = {
     'PHE':[11, 'CG','CZ'],
     'TYR':[12, 'CG','CZ'],
     'TRP':[14, 'CD2','CE2'],
     'HIS':[10, 'CG','ND1','CE1','NE2','CD2']
 }
-    
-# not used! instead, use sysfunctions.cl_parse()
-def open_pdbs():
-    """
-    Gets PDB files from command line parameters and handles errors.
-    
-    Returns:
-        list: The PDB file names provided as command line arguments.
-    
-    Raises:
-        ValueError: If the file type is not ".pdb" or if incorrect usage of the script is detected.
-        FileNotFoundError: If any of the provided PDB files do not exist.
-    """
-    try:
-        # if len(sys.argv) < 3:
-        #     raise ValueError("Usage: python3 parse.py <pdb_file1> <pdb_file2> ...")
-
-        for pdb_file_arg in sys.argv[1:]:
-            if not pdb_file_arg.lower().endswith(".pdb"):
-                raise ValueError(f"Invalid file type. Please provide a .pdb file: {pdb_file_arg}")
-
-            if not os.path.exists(pdb_file_arg):
-                raise FileNotFoundError(f"File not found: {pdb_file_arg}")
-
-    except Exception as e:
-        print(f"Error: {e}")
-        sys.exit(1) # error exiting
-        
-    pdb_files = []
-    for file in sys.argv[1:]:
-        pdb_files.append(file)
-        
-    return pdb_files
 
 def parse_pdb(pdb_files):
     """
@@ -104,7 +70,7 @@ def parse_pdb(pdb_files):
                     
                     # checks if the residue is aromatic and if the atoms are complete (all populated)
                     if current_residue.resname in stacking and len(current_residue.atoms) == stacking[current_residue.resname][0]: 
-                        ring_atoms = np.array([[atom.x, atom.y, atom.z] for atom in current_residue.atoms[5:]]) # ignores [N, CA, C, O] and [RNG] atoms
+                        ring_atoms = array([[atom.x, atom.y, atom.z] for atom in current_residue.atoms[5:]]) # ignores [N, CA, C, O] and [RNG] atoms
                         centroid_atom = centroid(current_residue)
                         centroid_atom2 = centroid2(current_residue, ring_atoms)
                         current_residue.atoms.append(centroid_atom2)
@@ -144,18 +110,18 @@ def centroid(residue):
     return centroid_atom
 
 def centroid2(residue, ring_atoms):
-    centroid = np.mean(ring_atoms, axis = 0)
+    centroid = mean(ring_atoms, axis = 0)
     centroid_atom = Atom()
     centroid_atom.set_atom_info("RNG", centroid[0], centroid[1], centroid[2])
     centroid_atom.residue = residue
     return centroid_atom
 
 def calc_normal_vector(ring_atoms):
-    centroid = np.mean(ring_atoms, axis = 0) # axis=0 -> mean through the columns
+    centroid = mean(ring_atoms, axis = 0) # axis=0 -> mean through the columns
     centered_ring_atoms = ring_atoms - centroid # normalizes to origin
     
     # Use singular value decomposition (SVD) to calculate the plane
-    _, _, vh = np.linalg.svd(centered_ring_atoms) # vh = V^T
+    _, _, vh = svd(centered_ring_atoms) # vh = V^T
     normal_vector = vh[2]  # The normal vector is the last row of the V^T matrix
     
     return normal_vector
