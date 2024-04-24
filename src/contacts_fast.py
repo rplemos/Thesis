@@ -5,9 +5,6 @@ from numpy.linalg import norm
 from classes import Contact, Match
 import conditions
 
-# TODO: 
-# - implement alpha-helix skipping to avoid false positives (3 residues minimum?) 
-#       this is kinda done  
 def fast_contacts(protein1, protein2):
     start = timer()
     
@@ -63,19 +60,23 @@ def fast_contacts(protein1, protein2):
                             if atom1.atomname != 'CA' and atom2.atomname != 'CA': # no need to calculate again for alpha carbons
                                 distance = dist((atom1.x, atom1.y, atom1.z), (atom2.x, atom2.y, atom2.z))
                             if distance <= 6: # max distance for contacts
+                                contact_types = []
                                 for contact_type, distance_range in conditions.categories.items():
-                                    if contact_type == 'hydrogen_bond' and (residue2.resnum - residue1.resnum < 3): # skips alpha-helix for h-bonds
+                                    if contact_type == 'hydrogen_bond' and (residue2.resnum - residue1.resnum <= 3): # skips alpha-helix for h-bonds
                                         continue
-                                    if distance_range[0] <= distance <= distance_range[1]:
-                                        if conditions.contact_conditions[contact_type](name1, name2):
-                                            if distance_ca > 13 and residue1.resname not in big_ones and residue2.resname not in big_ones: # checking the weird distant ones
-                                                print(distance, distance_ca, residue1.chain.id, residue1.resnum, name1, residue2.chain.id, residue2.resnum, name2)
+                                    if distance_range[0] <= distance <= distance_range[1]: # fits the range
+                                        if conditions.contact_conditions[contact_type](name1, name2): # fits the type of contact
+                                            # if distance_ca > 13 and residue1.resname == 'ARG' and residue2.resname == 'ARG': # checking the weird distant ones
+                                            #     print(distance, distance_ca, residue1.chain.id, residue1.resnum, name1, residue2.chain.id, residue2.resnum, name2)
 
-                                            contact = Contact(f"{protein1.id}:{residue1.chain.id}", f"{residue1.resnum}{name1}", 
-                                                            f"{protein2.id}:{residue2.chain.id}", f"{residue2.resnum}{name2}", 
-                                                            distance, contact_type, atom1, atom2)
-                                            contacts.append(contact)
-                                            
+                                            contact_types.append(contact_type)
+
+                                if contact_types:
+                                    contact = Contact(f"{protein1.id}:{residue1.chain.id}", f"{residue1.resnum}{name1}", 
+                                                    f"{protein2.id}:{residue2.chain.id}", f"{residue2.resnum}{name2}", 
+                                                    distance, contact_types, atom1, atom2)
+                                    contacts.append(contact)
+                                                                                        
                         else: # for control over non-standard atom names
                             pass
                             #print(f"Unknown atom: {name1} or {name2}")      
@@ -97,15 +98,15 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff, match_list_new):
             q2_coords = contact2.atom2.x, contact2.atom2.y, contact2.atom2.z
             
             d1 = dist(p1_coords, q1_coords)  # p1 x q1
-            if d1 > (cutoff * 3):
-                continue
+            if d1 > cutoff * 5:
+                continue                
             d2 = dist(p2_coords, q2_coords)  # p2 x q2
             d3 = dist(p1_coords, q2_coords)  # p1 x q2
             d4 = dist(p2_coords, q1_coords)  # p2 x q1
-            
+
             avd = min(((d1 + d2)/2),((d3 + d4)/2))
             
-            if avd < cutoff:
+            if avd < cutoff and 'hydrophobic' not in contact1.type and 'hydrophobic' not in contact2.type: # means that it's a match
                 match = Match(avd, contact1.to_list(), contact2.to_list())
                 if match not in match_list_new:
                     match_list.append(match)
@@ -122,7 +123,8 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff, match_list_new):
     return match_list, average_avd, contact_matches
 
 def new_avd(contact_list_protein1, contact_list_protein2, cutoff):
-    
+    print(len(contact_list_protein1))
+    print(len(contact_list_protein2))
     start = timer()
     
     match_list = []
@@ -142,7 +144,7 @@ def new_avd(contact_list_protein1, contact_list_protein2, cutoff):
 
             avd = ((d1 + d2)/2)
             
-            if avd < cutoff: # means that it's a match
+            if avd < cutoff and 'hydrophobic' not in contact1.type and 'hydrophobic' not in contact2.type: # means that it's a match
                 match = Match(avd, contact1.to_list(), contact2.to_list())
                 match_list.append(match)
         
