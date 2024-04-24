@@ -66,15 +66,17 @@ def parse_pdb(pdb_files):
                     
                     current_residue.atoms.append(atom)
                     
-                    # checks if the residue is aromatic and if the atoms are complete (all populated)
-                    if current_residue.resname in stacking and len(current_residue.atoms) == stacking[current_residue.resname][0]:
-                        ring_atoms = array([[atom.x, atom.y, atom.z] for atom in current_residue.atoms[5:]]) # ignores [N, CA, C, O] and [RNG] atoms
-                        centroid_atom = centroid(current_residue, ring_atoms)
-                        current_residue.atoms.append(centroid_atom)
-                        current_residue.ring = True
+                    if current_residue.resname in stacking:
+                        allowed = stacking[current_residue.resname][1:]
+                        all_atoms_have_occupancy_one = all(atom.occupancy == 1 for atom in current_residue.atoms if atom.atomname in allowed)
+                        if all_atoms_have_occupancy_one and len(current_residue.atoms) == stacking[current_residue.resname][0]:
+                            ring_atoms = array([[atom.x, atom.y, atom.z] for atom in current_residue.atoms[5:]]) # ignores [N, CA, C, O] and [RNG] atoms
+                            centroid_atom = centroid(current_residue, ring_atoms)
+                            current_residue.atoms.append(centroid_atom)
+                            current_residue.ring = True
 
-                        normal_vector = calc_normal_vector(ring_atoms)
-                        current_residue.normal_vector = normal_vector
+                            normal_vector = calc_normal_vector(ring_atoms)
+                            current_residue.normal_vector = normal_vector
 
                 elif line.startswith("END"):  # finishes and resets everything for the new protein
                     proteins.append(current_protein)
