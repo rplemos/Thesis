@@ -48,20 +48,15 @@ class Residue:
         for atom in self.atoms:
             yield atom
 
-
+        
 class Atom:
-    def __init__(self):
-        self.atomname = None
-        self.x = None
-        self.y = None
-        self.z = None
-        self.residue = None
-
-    def set_atom_info(self, atomname, x, y, z):
+    def __init__(self, atomname=None, x=None, y=None, z=None, occupancy=1, residue=None):
         self.atomname = atomname
         self.x = x
         self.y = y
         self.z = z
+        self.occupancy = occupancy
+        self.residue = residue
 
 
 class Contact:
@@ -86,8 +81,8 @@ class Match:
         self.contact1 = contact1
         self.contact2 = contact2
         
-    def __eq__(self, other):
-        if isinstance(other, Match):
+    def __eq__(self, other): # compares a Match object with another Match object
+        if isinstance(other, Match): # checks if other is a Match object
             return (self.avd == other.avd and
                     self.contact1 == other.contact1 and
                     self.contact2 == other.contact2)
