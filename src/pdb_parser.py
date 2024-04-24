@@ -54,30 +54,24 @@ def parse_pdb(pdb_files):
                         current_residue.resname = resname
                         current_residue.chain = current_chain  # Set the parent chain
                         current_chain.residues.append(current_residue)
-                                                
-                    atom = Atom()  # each line is a new atom anyway
-                    
+                                                                    
                     atomname = line[12:16].replace(" ", "")
-
                     if atomname == "OXT": # OXT is the C-terminal Oxygen atom. However, it exhibits the same properties of any Oxygen
-                        atomname = atomname.replace("OXT","O")
-                                      
-                    x, y, z = float(line[30:38]), float(line[38:46]), float(line[46:54])
+                        atomname = atomname.replace("OXT","O")                
                     
-                    atom.set_atom_info(atomname, x, y, z)
-                    atom.residue = current_residue  # Set the parent residue
+                    x, y, z = float(line[30:38]), float(line[38:46]), float(line[46:54])
+                    occupancy = float(line[55:60])
+    
+                    atom = Atom(atomname, x, y, z, occupancy, current_residue)
+                    
                     current_residue.atoms.append(atom)
                     
                     # checks if the residue is aromatic and if the atoms are complete (all populated)
-                    if current_residue.resname in stacking and len(current_residue.atoms) == stacking[current_residue.resname][0]: 
+                    if current_residue.resname in stacking and len(current_residue.atoms) == stacking[current_residue.resname][0]:
                         ring_atoms = array([[atom.x, atom.y, atom.z] for atom in current_residue.atoms[5:]]) # ignores [N, CA, C, O] and [RNG] atoms
-                        centroid_atom = centroid(current_residue)
-                        centroid_atom2 = centroid2(current_residue, ring_atoms)
-                        current_residue.atoms.append(centroid_atom2)
+                        centroid_atom = centroid(current_residue, ring_atoms)
+                        current_residue.atoms.append(centroid_atom)
                         current_residue.ring = True
-                        # print("two atoms:", current_residue.resname, current_residue.resnum, centroid_atom.x, centroid_atom.y, centroid_atom.z)
-                        # print("all atoms:", current_residue.resname, current_residue.resnum, centroid_atom2.x, centroid_atom2.y, centroid_atom2.z)
-                        # print()
 
                         normal_vector = calc_normal_vector(ring_atoms)
                         current_residue.normal_vector = normal_vector
@@ -89,31 +83,9 @@ def parse_pdb(pdb_files):
                     current_residue = None
     return proteins
 
-def centroid(residue):
-    size = len(stacking[residue.resname])-1
-    sum_x, sum_y, sum_z = 0, 0, 0
-    
-    for atom in residue.atoms:
-        if atom.atomname in stacking[residue.resname]:
-            sum_x += atom.x
-            sum_y += atom.y
-            sum_z += atom.z
-
-    centroid_x = sum_x / size
-    centroid_y = sum_y / size
-    centroid_z = sum_z / size
-    
-    centroid_atom = Atom()
-    centroid_atom.set_atom_info("RNG", centroid_x, centroid_y, centroid_z)
-    centroid_atom.residue = residue
-        
-    return centroid_atom
-
-def centroid2(residue, ring_atoms):
+def centroid(residue, ring_atoms):
     centroid = mean(ring_atoms, axis = 0)
-    centroid_atom = Atom()
-    centroid_atom.set_atom_info("RNG", centroid[0], centroid[1], centroid[2])
-    centroid_atom.residue = residue
+    centroid_atom = Atom("RNG", centroid[0], centroid[1], centroid[2], 1, residue)
     return centroid_atom
 
 def calc_normal_vector(ring_atoms):
