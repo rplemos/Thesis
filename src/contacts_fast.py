@@ -31,7 +31,8 @@ def fast_contacts(protein1, protein2):
                     # print(residue1.chain.id, residue1.resname, residue1.resnum, residue1.chain.id, residue2.resname, residue2.resnum, distance_ca)
                     continue
                 
-                if residue1.ring and residue2.ring: # two aromatic residues
+                # CHECKING FOR AROMATIC STACKINGS
+                if residue1.ring and residue2.ring:
                     ring1, ring2 = residue1.atoms[-1], residue2.atoms[-1] # RNG atoms
                     distance = dist((ring1.x, ring1.y, ring1.z), (ring2.x, ring2.y, ring2.z))
                     angle = calc_angle(residue1.normal_vector, residue2.normal_vector)
@@ -43,12 +44,12 @@ def fast_contacts(protein1, protein2):
                             stack_type = "-perpendicular"
                             #print(f"Perpendicular.\t Distance: {distance:.2f}. Angle ({residue1.chain.id}:{residue1.resnum}{residue1.resname} - {residue2.chain.id}:{residue2.resnum}{residue2.resname}): {angle:.2f}")
                         else:
-                            stack_type = "-unknown"
+                            stack_type = "-other"
                             #print(f"Unknown.      \t Distance: {distance:.2f}. Angle ({residue1.chain.id}:{residue1.resnum}{residue1.resname} - {residue2.chain.id}:{residue2.resnum}{residue2.resname}): {angle:.2f}")
-   
+                                                           
                         contact = Contact(f"{protein1.id}:{residue1.chain.id}", f"{residue1.resnum}{residue1.resname}:{ring1.atomname}", 
                                         f"{protein2.id}:{residue2.chain.id}", f"{residue2.resnum}{residue2.resname}:{ring2.atomname}", 
-                                        distance, 'stacking'+stack_type, ring1, ring2)
+                                        distance, ["stacking"+stack_type], ring1, ring2)
                         
                         contacts.append(contact)
                         
@@ -123,8 +124,6 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff, match_list_new):
     return match_list, average_avd, contact_matches
 
 def new_avd(contact_list_protein1, contact_list_protein2, cutoff):
-    print(len(contact_list_protein1))
-    print(len(contact_list_protein2))
     start = timer()
     
     match_list = []
@@ -159,25 +158,25 @@ def new_avd(contact_list_protein1, contact_list_protein2, cutoff):
 
     return match_list, average_avd, contact_matches
 
-def show_contacts(distances):
+def show_contacts(contacts):
     category_counts = {}
 
     # Iterate over the output and count occurrences for each category
-    for entry in distances:
-        category = entry.type
+    for contact in contacts:
+        category = tuple(contact.type)
         category_counts[category] = category_counts.get(category, 0) + 1
-
+    
     sorted_categories = sorted(category_counts.items(), key=lambda x: x[1])
 
     for category, count in sorted_categories:
-        print(f"Number of '{category}' occurrences:", count)
-        if count <= 0:
-            print(f"All entries for '{category}':")
-            for entry in distances:
-                if entry[5] == category:
-                    print("\t",entry[:6])
+        print(f"\nNumber of {str(category)[1:-1]} occurrences:", count)
+        if count <= 3:
+            print(f"All entries for {str(category)[1:-1]}:")
+            for entry in contacts:
+                if tuple(entry.type) == category:
+                    print("\t",entry.to_list())
 
-    print(f"Total number of contacts: {len(distances)}\n")    
+    print(f"\nTotal number of contacts: {len(contacts)}\n")    
 
 def calc_angle(vector1, vector2):
     dot_product = dot(vector1, vector2)
