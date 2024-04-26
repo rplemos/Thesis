@@ -4,12 +4,9 @@ import os
 import subprocess
 import re
 import glob
-try: 
-    import Bio.PDB
-except ImportError:
-    print("Bio.PDB is not installed!")
-    
+import sys
 
+    
 def tmalign_superimpose(pdb_files, ref_pdb, rmsd):
     """
     Performs superimposition using TMAlign. This is the default mode to superimpose structures.
@@ -84,7 +81,14 @@ def biopython_superimpose(pdb_files, ref_pdb, atoms_to_be_aligned, rmsd):
         .pdb files of the aligned proteins that pass the RMSD threshold.
         list: List of paths to the aligned PDB files.
     """
-    print("---BioPython Mode Selected---\n")   
+    print("---BioPython Mode Selected---\n")
+    
+    try: 
+        import Bio.PDB
+    except ImportError:
+        print("Bio.PDB is not installed!")
+        sys.exit(1)
+       
     pdb_parser = Bio.PDB.PDBParser(QUIET=True)
 
     ref_structure = pdb_parser.get_structure("reference", ref_pdb)
