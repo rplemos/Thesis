@@ -65,7 +65,7 @@ def parse_pdb(pdb_files):
                     x, y, z = float(line[30:38]), float(line[38:46]), float(line[46:54])
                     occupancy = float(line[55:60])
                     
-                    if occupancy > 0.3: # ignores low quality atoms (arbitrary value!)
+                    if occupancy >= 0: # ignores low quality atoms (arbitrary value!)
                         atom = Atom(atomname, x, y, z, occupancy, current_residue) # creates atom
                         current_residue.atoms.append(atom)
                     else:
@@ -87,6 +87,13 @@ def parse_pdb(pdb_files):
                             current_residue.normal_vector = normal_vector
 
                 elif line.startswith("END"):  # finishes and resets everything for the new protein
+                    
+                    # Handling cases where there is no ID
+                    if current_protein.id is None:
+                        id = str(file).split("/")[-1]
+                        id = id.split(".")[0]
+                        current_protein.id = id  
+                                         
                     proteins.append(current_protein)
                     current_protein = None
                     current_chain = None
