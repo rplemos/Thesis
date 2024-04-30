@@ -5,23 +5,22 @@ from numpy.linalg import norm
 from classes import Contact, Match
 import conditions
 
-def fast_contacts(protein1, protein2):
+def fast_contacts(protein):
     start = timer()
     
-    residues1 = list(protein1.get_residues())
-    residues2 = list(protein2.get_residues())
+    residues = list(protein.get_residues())
     contacts = []
     
     # FOR GETTING ALL THE CHAINS ON THE REFERENCE PROTEIN, AND SETTING TO COMPARE ONLY TO THEM
-    chains = [chain.id for chain in protein1.chains]
+    chains = [chain.id for chain in protein.chains]
     print(f"Chains to be analyzed: {chains}")
     
     big_ones = ["ARG", "LYS", "GLU", "PHE"]
     
-    for i, residue1 in enumerate(residues1):
-        for j, residue2 in enumerate(residues2[i+1:], start=i+1):
-            residue1 = residues1[i]
-            residue2 = residues2[j] 
+    for i, residue1 in enumerate(residues):
+        for j, residue2 in enumerate(residues[i+1:], start=i+1):
+            residue1 = residues[i]
+            residue2 = residues[j] 
             if residue1.chain.id in chains and residue2.chain.id in chains:
                 ca1, ca2 = residue1.atoms[1], residue2.atoms[1] # alpha carbons
                 distance_ca = dist((ca1.x, ca1.y, ca1.z), (ca2.x, ca2.y, ca2.z))
@@ -47,8 +46,8 @@ def fast_contacts(protein1, protein2):
                             stack_type = "-other"
                             #print(f"Unknown.      \t Distance: {distance:.2f}. Angle ({residue1.chain.id}:{residue1.resnum}{residue1.resname} - {residue2.chain.id}:{residue2.resnum}{residue2.resname}): {angle:.2f}")
                                                            
-                        contact = Contact(f"{protein1.id}:{residue1.chain.id}", f"{residue1.resnum}{residue1.resname}:{ring1.atomname}", 
-                                        f"{protein2.id}:{residue2.chain.id}", f"{residue2.resnum}{residue2.resname}:{ring2.atomname}", 
+                        contact = Contact(f"{protein.id}:{residue1.chain.id}", f"{residue1.resnum}{residue1.resname}:{ring1.atomname}", 
+                                        f"{protein.id}:{residue2.chain.id}", f"{residue2.resnum}{residue2.resname}:{ring2.atomname}", 
                                         distance, ["stacking"+stack_type], ring1, ring2)
                         
                         contacts.append(contact)
@@ -73,8 +72,8 @@ def fast_contacts(protein1, protein2):
                                             contact_types.append(contact_type)
 
                                 if contact_types:
-                                    contact = Contact(f"{protein1.id}:{residue1.chain.id}", f"{residue1.resnum}{name1}", 
-                                                    f"{protein2.id}:{residue2.chain.id}", f"{residue2.resnum}{name2}", 
+                                    contact = Contact(f"{protein.id}:{residue1.chain.id}", f"{residue1.resnum}{name1}", 
+                                                    f"{protein.id}:{residue2.chain.id}", f"{residue2.resnum}{name2}", 
                                                     distance, contact_types, atom1, atom2)
                                     contacts.append(contact)
                                                                                         
