@@ -22,32 +22,30 @@ def main():
         file_list = superimposers.biopython_superimpose(pdb_files, ref_pdb, atoms_to_be_aligned, rmsd)
     elif mode == "TMAlign":
         file_list = superimposers.tmalign_superimpose(pdb_files, ref_pdb, rmsd)
-
+        
     parsed_proteins = pdb_parser.parse_pdb(file_list)
     
     ref_distance = None
     ref_protein = parsed_proteins[0].id
     for protein in parsed_proteins:
-        print(f"Detecting contacts for {protein.id} against {protein.id}")
-        distances = contacts_fast.fast_contacts(protein, protein)
+        print(f"Detecting contacts for {protein.id}")
+        distances = contacts_fast.fast_contacts(protein)
         contacts_fast.show_contacts(distances)
         if ref_distance is None:
             ref_distance = distances
         else:
-            match_list_new, average_avd_new, contact_matches_new = contacts_fast.new_avd(ref_distance, distances, avd_cutoff)
-            match_list, average_avd, contact_matches = contacts_fast.avd(ref_distance, distances, avd_cutoff, match_list_new)
+            match_list, average_avd, contact_matches = contacts_fast.avd(ref_distance, distances, avd_cutoff)
             if match_list is not None:
-                print(f"Average AVD for {ref_protein} and {protein.id} (new): {average_avd_new}\nNumber of contact matches found: {contact_matches_new}\n")
                 print(f"Average AVD for {ref_protein} and {protein.id} (old): {average_avd}\nNumber of contact matches found: {contact_matches}\n")
             else:
                 print(f"No contact matches found between {ref_protein} and {protein.id}.\nTry increasing the cutoff value.\n")     
         print("-------------------------------------\n")
 
-    if match_list:
-        sorted_match_list = sorted(match_list, key=lambda x: x.avd)
-        for match in sorted_match_list:
-            pass
-            print(match.avd, match.contact1, match.contact2)
+    # if match_list:
+    #     sorted_match_list = sorted(match_list, key=lambda x: x.avd)
+    #     for match in sorted_match_list:
+    #         pass
+    #         print(match.avd, match.contact1, match.contact2)
 
     end = timer()
     print(f"Total time elapsed: {end - start}\n")
