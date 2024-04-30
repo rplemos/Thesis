@@ -85,7 +85,8 @@ def fast_contacts(protein1, protein2):
     print(f"Time elapsed: {end - start}\n")
     return contacts
 
-def avd(contact_list_protein1, contact_list_protein2, cutoff, match_list_new):
+
+def avd(contact_list_protein1, contact_list_protein2, cutoff):
     start = timer()
     
     match_list = []
@@ -99,7 +100,7 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff, match_list_new):
             q2_coords = contact2.atom2.x, contact2.atom2.y, contact2.atom2.z
             
             d1 = dist(p1_coords, q1_coords)  # p1 x q1
-            if d1 > cutoff * 5:
+            if d1 > cutoff * 3:
                 continue                
             d2 = dist(p2_coords, q2_coords)  # p2 x q2
             d3 = dist(p1_coords, q2_coords)  # p1 x q2
@@ -109,8 +110,9 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff, match_list_new):
             
             if avd < cutoff and 'hydrophobic' not in contact1.type and 'hydrophobic' not in contact2.type: # means that it's a match
                 match = Match(avd, contact1.to_list(), contact2.to_list())
-                if match not in match_list_new:
-                    match_list.append(match)
+                match_list.append(match)
+                if (d1+d2)/2 > (d3+d4)/2:
+                    print(match.contact1, match.contact2)
     
     if len(match_list) == 0:
         return None, None, None
@@ -123,40 +125,6 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff, match_list_new):
 
     return match_list, average_avd, contact_matches
 
-def new_avd(contact_list_protein1, contact_list_protein2, cutoff):
-    start = timer()
-    
-    match_list = []
-        
-    for contact1 in contact_list_protein1:
-        p1_coords = contact1.atom1.x, contact1.atom1.y, contact1.atom1.z
-        p2_coords = contact1.atom2.x, contact1.atom2.y, contact1.atom2.z
-        
-        for contact2 in contact_list_protein2:
-            q1_coords = contact2.atom1.x, contact2.atom1.y, contact2.atom1.z
-            q2_coords = contact2.atom2.x, contact2.atom2.y, contact2.atom2.z
-            
-            d1 = dist(p1_coords, q1_coords)  # p1 x q1
-            if d1 > (cutoff * 3):
-                continue
-            d2 = dist(p2_coords, q2_coords)  # p2 x q2
-
-            avd = ((d1 + d2)/2)
-            
-            if avd < cutoff and 'hydrophobic' not in contact1.type and 'hydrophobic' not in contact2.type: # means that it's a match
-                match = Match(avd, contact1.to_list(), contact2.to_list())
-                match_list.append(match)
-        
-    if len(match_list) == 0:
-        return None, None, None
-    
-    average_avd = sum(single_avd.avd for single_avd in match_list) / len(match_list)
-    contact_matches = len(match_list)
-
-    end = timer()
-    print(f"AVD Time elapsed (new): {end - start}\n")
-
-    return match_list, average_avd, contact_matches
 
 def show_contacts(contacts):
     category_counts = {}
