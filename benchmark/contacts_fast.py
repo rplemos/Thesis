@@ -84,9 +84,9 @@ def fast_contacts(protein):
                             pass
                             #print(f"Unknown atom: {name1} or {name2}")      
     end = timer()
-    print(f"Protein length: {len(residues)}")
-    print(f"Contacts found: {len(contacts)}")
-    print(f"Time elapsed: {end - start}\n")
+    print(f"\tProtein length: {len(residues)}")
+    print(f"\tContacts found: {len(contacts)}")
+    print(f"\tTime elapsed: {end - start}\n")
     return contacts
 
 

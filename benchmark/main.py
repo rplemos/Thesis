@@ -12,7 +12,7 @@ def main():
     
     for file in files_in_folder:
         parsed_protein = pdb_parser.parse_pdb(file)
-        print(f"Detecting contacts for {parsed_protein.id} against {parsed_protein.id}")
+        print(f"Detecting contacts for {parsed_protein.id}")
         contacts_fast.fast_contacts(parsed_protein)
 
     end = timer()
