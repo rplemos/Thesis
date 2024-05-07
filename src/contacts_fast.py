@@ -5,6 +5,7 @@ from numpy.linalg import norm
 from classes import Contact, Match
 import conditions
 
+
 def fast_contacts(protein):
     start = timer()
     
@@ -14,21 +15,22 @@ def fast_contacts(protein):
     # FOR GETTING ALL THE CHAINS ON THE REFERENCE PROTEIN, AND SETTING TO COMPARE ONLY TO THEM
     chains = [chain.id for chain in protein.chains]
     print(f"Chains to be analyzed: {chains}")
+    print(f"Protein size: {protein.count_residues()} residues")
     
     big_ones = ["ARG", "LYS", "GLU", "PHE"]
     
     for i, residue1 in enumerate(residues):
         for j, residue2 in enumerate(residues[i+1:], start=i+1):
             residue1 = residues[i]
-            residue2 = residues[j] 
+            residue2 = residues[j]
+             
             if residue1.chain.id in chains and residue2.chain.id in chains:
                 ca1, ca2 = residue1.atoms[1], residue2.atoms[1] # alpha carbons
                 distance_ca = dist((ca1.x, ca1.y, ca1.z), (ca2.x, ca2.y, ca2.z))
-                if distance_ca > 20:
-                    continue # skips the current residue 2
-                elif residue1.resname not in big_ones and residue2.resname not in big_ones and distance_ca > 13:
-                    # print(residue1.chain.id, residue1.resname, residue1.resnum, residue1.chain.id, residue2.resname, residue2.resnum, distance_ca)
+                if residue1.resname not in big_ones and residue2.resname not in big_ones and distance_ca > 13:
                     continue
+                elif distance_ca > 20:
+                    continue # skips the current residue 2
                 
                 # CHECKING FOR AROMATIC STACKINGS
                 if residue1.ring and residue2.ring:
@@ -38,17 +40,14 @@ def fast_contacts(protein):
                     if distance >= 2 and distance <= 5: # within aromatic stacking limits
                         if (160 <= angle < 180) or (0 <= angle < 20):
                             stack_type = "-parallel"
-                            #print(f"Parallel.     \t Distance: {distance:.2f}. Angle ({residue1.chain.id}:{residue1.resnum}{residue1.resname} - {residue2.chain.id}:{residue2.resnum}{residue2.resname}): {angle:.2f}")
                         elif (80 <= angle < 100):
                             stack_type = "-perpendicular"
-                            #print(f"Perpendicular.\t Distance: {distance:.2f}. Angle ({residue1.chain.id}:{residue1.resnum}{residue1.resname} - {residue2.chain.id}:{residue2.resnum}{residue2.resname}): {angle:.2f}")
                         else:
                             stack_type = "-other"
-                            #print(f"Unknown.      \t Distance: {distance:.2f}. Angle ({residue1.chain.id}:{residue1.resnum}{residue1.resname} - {residue2.chain.id}:{residue2.resnum}{residue2.resname}): {angle:.2f}")
                                                            
                         contact = Contact(f"{protein.id}:{residue1.chain.id}", f"{residue1.resnum}{residue1.resname}:{ring1.atomname}", 
                                         f"{protein.id}:{residue2.chain.id}", f"{residue2.resnum}{residue2.resname}:{ring2.atomname}", 
-                                        distance, ["stacking"+stack_type], ring1, ring2)
+                                        float(f"{distance:.2f}"), ["stacking"+stack_type], ring1, ring2)
                         
                         contacts.append(contact)
                         
@@ -74,7 +73,7 @@ def fast_contacts(protein):
                                 if contact_types:
                                     contact = Contact(f"{protein.id}:{residue1.chain.id}", f"{residue1.resnum}{name1}", 
                                                     f"{protein.id}:{residue2.chain.id}", f"{residue2.resnum}{name2}", 
-                                                    distance, contact_types, atom1, atom2)
+                                                    float(f"{distance:.2f}"), contact_types, atom1, atom2)
                                     contacts.append(contact)
                                                                                         
                         else: # for control over non-standard atom names
@@ -82,10 +81,12 @@ def fast_contacts(protein):
                             #print(f"Unknown atom: {name1} or {name2}")      
     end = timer()
     print(f"Time elapsed: {end - start}\n")
+
     return contacts
 
 
 def avd(contact_list_protein1, contact_list_protein2, cutoff):
+    
     start = timer()
     
     match_list = []
@@ -95,6 +96,25 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff):
         p2_coords = contact1.atom2.x, contact1.atom2.y, contact1.atom2.z
         
         for contact2 in contact_list_protein2:
+            
+            # FOR TESTING
+            # if contact1.residueatom1 == "13VAL:CB" and contact1.residueatom2 == "123PHE:CD1":
+            #     if contact2.residueatom1 == "94VAL:CG1" and contact2.residueatom2 == "98LEU:CD2":
+            #         q1_coords = contact2.atom1.x, contact2.atom1.y, contact2.atom1.z
+            #         q2_coords = contact2.atom2.x, contact2.atom2.y, contact2.atom2.z
+                    
+            #         d1 = dist(p1_coords, q1_coords)  # p1 x q1
+            #         if d1 > cutoff * 3:
+            #             continue                
+            #         d2 = dist(p2_coords, q2_coords)  # p2 x q2
+            #         d3 = dist(p1_coords, q2_coords)  # p1 x q2
+            #         d4 = dist(p2_coords, q1_coords)  # p2 x q1
+
+            #         avd = min(((d1 + d2)/2),((d3 + d4)/2))
+            #         print(avd)
+            #         print(contact1.type, contact2.type)
+            #         print(contact1.to_list(), contact2.to_list())
+            
             q1_coords = contact2.atom1.x, contact2.atom1.y, contact2.atom1.z
             q2_coords = contact2.atom2.x, contact2.atom2.y, contact2.atom2.z
             
@@ -107,11 +127,12 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff):
 
             avd = min(((d1 + d2)/2),((d3 + d4)/2))
             
-            if avd < cutoff and 'hydrophobic' not in contact1.type and 'hydrophobic' not in contact2.type: # means that it's a match
-                match = Match(avd, contact1.to_list(), contact2.to_list())
-                match_list.append(match)
-                if (d1+d2)/2 > (d3+d4)/2:
-                    print(match.contact1, match.contact2)
+            # if avd < cutoff and ('hydrophobic' not in contact1.type or 'hydrophobic' not in contact2.type): # means that it's a match
+            if avd < cutoff:
+                #if ('hydrogen_bond' not in contact1.type or 'hydrogen_bond' not in contact2.type):
+                    d3d4 = True if (d1+d2)/2 > (d3+d4)/2 else False
+                    match = Match(float(f"{avd:.2f}"), contact1.to_list(), contact2.to_list(), d3d4)
+                    match_list.append(match)
     
     if len(match_list) == 0:
         return None, None, None
@@ -137,7 +158,7 @@ def show_contacts(contacts):
 
     for category, count in sorted_categories:
         print(f"\nNumber of {str(category)[1:-1]} occurrences:", count)
-        if count <= 3:
+        if count <= 0:
             print(f"All entries for {str(category)[1:-1]}:")
             for entry in contacts:
                 if tuple(entry.type) == category:
@@ -151,13 +172,3 @@ def calc_angle(vector1, vector2):
     angle = arccos(dot_product / magnitude_product) # angle in radians   
     
     return degrees(angle)
-
-# For testing without main:
-
-# #file = ["human_133l.pdb"]
-# #file = ["human_133l.pdb", "chick_132l_aligned_rotate.pdb"]
-# #file = ["human_133l.pdb", "8uw4.pdb"]
-# file = ["8uw4.pdb"]
-# parsed_proteins = pdb_parser.parse_pdb(file)
-         
-# distances = fast_contacts(parsed_proteins[0], parsed_proteins[0])
