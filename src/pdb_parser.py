@@ -47,15 +47,13 @@ def parse_pdb(pdb_files):
                         resname = "HIS"                        
 
                     if current_chain is None or current_chain.id != chain_id:  # new chain
-                        current_chain = Chain()
-                        current_chain.id = chain_id
+                        residues = []
+                        current_chain = Chain(chain_id, residues)
                         current_protein.chains.append(current_chain)
 
                     if current_residue is None or current_residue.resnum != resnum:  # new residue
-                        current_residue = Residue()
-                        current_residue.resnum = resnum
-                        current_residue.resname = resname
-                        current_residue.chain = current_chain  # Set the parent chain
+                        atoms = []
+                        current_residue = Residue(resnum, resname, atoms, current_chain, False, None)
                         current_chain.residues.append(current_residue)
                                                                     
                     atomname = line[12:16].replace(" ", "")
@@ -95,10 +93,11 @@ def parse_pdb(pdb_files):
                         current_protein.id = id  
                                          
                     proteins.append(current_protein)
+
                     current_protein = None
                     current_chain = None
                     current_residue = None
-                    
+                
     return proteins
 
 
