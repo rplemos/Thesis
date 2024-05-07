@@ -5,6 +5,7 @@ import pdb_parser
 import superimposers
 import sysfunctions
 import contacts_fast
+import contact_map
 
 def main():
     
@@ -31,6 +32,9 @@ def main():
         print(f"Detecting contacts for {protein.id}")
         distances = contacts_fast.fast_contacts(protein)
         contacts_fast.show_contacts(distances)
+        protein_length = protein.count_residues()
+        matrix = contact_map.contact_map(distances, protein_length)
+        contact_map.plot_matrix(matrix)
         if ref_distance is None:
             ref_distance = distances
         else:
@@ -44,9 +48,21 @@ def main():
     # if match_list:
     #     sorted_match_list = sorted(match_list, key=lambda x: x.avd)
     #     for match in sorted_match_list:
-    #         pass
-    #         print(match.avd, match.contact1, match.contact2)
+    #         if match.d3d4:
+    #             print(match.avd, match.contact1, match.contact2, match.d3d4)
+    #         else:
+    #             print("\t", match.avd, match.contact1, match.contact2, match.d3d4)
 
+    # if match_list:
+    #     cont = 0
+    #     for match in match_list:
+    #         if match.d3d4:
+    #             print("\t",match.avd, match.contact1, match.contact2, match.d3d4)
+    #             cont += 1
+    #         else:
+    #             print(match.avd, match.contact1, match.contact2, match.d3d4)
+    # print(cont)
+    
     end = timer()
     print(f"Total time elapsed: {end - start}\n")
 
