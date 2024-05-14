@@ -7,6 +7,8 @@ import sysfunctions
 import contacts_fast
 import contact_map
 
+import plot2
+
 def main():
     
     start = timer()
@@ -26,19 +28,32 @@ def main():
         
     parsed_proteins = pdb_parser.parse_pdb(file_list)
     
-    ref_distance = None
+    ref_contacts = None
     ref_protein = parsed_proteins[0].id
     for protein in parsed_proteins:
         print(f"Detecting contacts for {protein.id}")
-        distances = contacts_fast.fast_contacts(protein)
-        contacts_fast.show_contacts(distances)
+        contacts = contacts_fast.fast_contacts(protein)
+        contacts_fast.show_contacts(contacts)
         protein_length = protein.count_residues()
-        matrix = contact_map.contact_map(distances, protein_length)
-        contact_map.plot_matrix(matrix)
-        if ref_distance is None:
-            ref_distance = distances
+        
+        chain_residues = {}
+        current_size = 0
+        total_size = 0
+        for chain in protein.chains:
+            print(chain.id, chain.count_residues())
+            chain_residues[chain.id] = current_size
+            current_size += chain.count_residues()
+            total_size += chain.count_residues()
+        print("total: ",total_size)
+        print(chain_residues)
+        
+        #matrix = contact_map.contact_map(contacts, chain_residues, total_size)
+        #contact_map.plot_matrix(matrix)
+        plot2.plot_matrix(contacts, chain_residues, total_size)
+        if ref_contacts is None:
+            ref_contacts = contacts
         else:
-            match_list, average_avd, contact_matches = contacts_fast.avd(ref_distance, distances, avd_cutoff)
+            match_list, average_avd, contact_matches = contacts_fast.avd(ref_contacts, contacts, avd_cutoff)
             if match_list is not None:
                 print(f"Average AVD for {ref_protein} and {protein.id} (old): {average_avd}\nNumber of contact matches found: {contact_matches}\n")
             else:
@@ -60,7 +75,7 @@ def main():
     #             print("\t",match.avd, match.contact1, match.contact2, match.d3d4)
     #             cont += 1
     #         else:
-    #             print(match.avd, match.contact1, match.contact2, match.d3d4)
+    #             print(match.avd, match.contact1.get_values(), match.contact2.get_values(), match.d3d4)
     # print(cont)
     
     end = timer()
