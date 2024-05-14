@@ -8,22 +8,22 @@
 # 7 - salt_bridge: positive=>negative or negative=>positive
 
 categories = {
+    'salt_bridge': (0, 3.9),
     'hydrophobic': (2, 4.5),
     'hydrogen_bond': (0, 3.9),
     'repulsive': (2, 6),
-    'attractive': (2, 6),
-    'salt_bridge': (0, 3.9),
+    'attractive': (3.9, 6),
     'disulfide_bond': (0, 2.8),
 }
 
 
 contact_conditions = {
+    'salt_bridge': lambda name1, name2: (contact_types[name1][2] == 1 and contact_types[name2][3] == 1) or (contact_types[name1][3] == 1 and contact_types[name2][2] == 1),
     'disulfide_bond': lambda name1, name2: name1 == "CYS:SG" and name2 == "CYS:SG",
     'hydrogen_bond': lambda name1, name2: ((contact_types[name1][4] == 1 and contact_types[name2][5] == 1) or (contact_types[name1][5] == 1 and contact_types[name2][4] == 1)),  
     'hydrophobic': lambda name1, name2: contact_types[name1][0] == 1 and contact_types[name2][0] == 1,
     'repulsive': lambda name1, name2: (contact_types[name1][2] == 1 and contact_types[name2][2] == 1) or (contact_types[name1][3] == 1 and contact_types[name2][3] == 1),
     'attractive': lambda name1, name2: (contact_types[name1][2] == 1 and contact_types[name2][3] == 1) or (contact_types[name1][3] == 1 and contact_types[name2][2] == 1),
-    'salt_bridge': lambda name1, name2: (contact_types[name1][2] == 1 and contact_types[name2][3] == 1) or (contact_types[name1][3] == 1 and contact_types[name2][2] == 1)
 }
 
 
