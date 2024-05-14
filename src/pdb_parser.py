@@ -41,6 +41,8 @@ def parse_pdb(pdb_files):
                 elif line.startswith("ATOM"):
                     chain_id = line[21]
                     resnum = int(line[22:26])
+                    if resnum <= 0:
+                        continue
                     resname = line[17:20]
 
                     if resname == "HIE" or resname == "HID":  # alternative names for protonated histidines
