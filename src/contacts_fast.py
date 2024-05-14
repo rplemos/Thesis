@@ -44,10 +44,10 @@ def fast_contacts(protein):
                             stack_type = "-perpendicular"
                         else:
                             stack_type = "-other"
-                                                           
-                        contact = Contact(f"{protein.id}:{residue1.chain.id}", f"{residue1.resnum}{residue1.resname}:{ring1.atomname}", 
-                                        f"{protein.id}:{residue2.chain.id}", f"{residue2.resnum}{residue2.resname}:{ring2.atomname}", 
-                                        float(f"{distance:.2f}"), ["stacking"+stack_type], ring1, ring2)
+
+                        contact = Contact(protein.id, residue1.chain.id, residue1.resnum, residue1.resname, ring1.atomname, 
+                                        protein.id, residue2.chain.id, residue2.resnum, residue2.resname, ring2.atomname, 
+                                        float(f"{distance:.2f}"), "stacking"+stack_type, ring1, ring2)
                         
                         contacts.append(contact)
                         
@@ -63,6 +63,10 @@ def fast_contacts(protein):
                                 for contact_type, distance_range in conditions.categories.items():
                                     if contact_type == 'hydrogen_bond' and (residue2.resnum - residue1.resnum <= 3): # skips alpha-helix for h-bonds
                                         continue
+                                    
+                                    if contact_type == 'hydrogen_bond' or contact_type == 'hydrophobic':
+                                        continue
+                                    
                                     if distance_range[0] <= distance <= distance_range[1]: # fits the range
                                         if conditions.contact_conditions[contact_type](name1, name2): # fits the type of contact
                                             # if distance_ca > 13 and residue1.resname == 'ARG' and residue2.resname == 'ARG': # checking the weird distant ones
@@ -70,10 +74,11 @@ def fast_contacts(protein):
 
                                             contact_types.append(contact_type)
 
-                                if contact_types:
-                                    contact = Contact(f"{protein.id}:{residue1.chain.id}", f"{residue1.resnum}{name1}", 
-                                                    f"{protein.id}:{residue2.chain.id}", f"{residue2.resnum}{name2}", 
-                                                    float(f"{distance:.2f}"), contact_types, atom1, atom2)
+                                if contact_types:                          
+                                    contact = Contact(protein.id, residue1.chain.id, residue1.resnum, residue1.resname, atom1.atomname, 
+                                                    protein.id, residue2.chain.id, residue2.resnum, residue2.resname, atom2.atomname, 
+                                                    float(f"{distance:.2f}"), contact_types[0], atom1, atom2)
+                                                                        
                                     contacts.append(contact)
                                                                                         
                         else: # for control over non-standard atom names
@@ -92,8 +97,10 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff):
     match_list = []
     
     for contact1 in contact_list_protein1:
-        p1_coords = contact1.atom1.x, contact1.atom1.y, contact1.atom1.z
-        p2_coords = contact1.atom2.x, contact1.atom2.y, contact1.atom2.z
+        atom1 = contact1.atom_object1
+        atom2 = contact1.atom_object2
+        p1_coords = atom1.x, atom1.y, atom1.z
+        p2_coords = atom2.x, atom2.y, atom2.z
         
         for contact2 in contact_list_protein2:
             
@@ -115,8 +122,10 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff):
             #         print(contact1.type, contact2.type)
             #         print(contact1.to_list(), contact2.to_list())
             
-            q1_coords = contact2.atom1.x, contact2.atom1.y, contact2.atom1.z
-            q2_coords = contact2.atom2.x, contact2.atom2.y, contact2.atom2.z
+            atom3 = contact2.atom_object1
+            atom4 = contact2.atom_object2
+            q1_coords = atom3.x, atom3.y, atom3.z
+            q2_coords = atom4.x, atom4.y, atom4.z
             
             d1 = dist(p1_coords, q1_coords)  # p1 x q1
             if d1 > cutoff * 3:
@@ -131,7 +140,7 @@ def avd(contact_list_protein1, contact_list_protein2, cutoff):
             if avd < cutoff:
                 #if ('hydrogen_bond' not in contact1.type or 'hydrogen_bond' not in contact2.type):
                     d3d4 = True if (d1+d2)/2 > (d3+d4)/2 else False
-                    match = Match(float(f"{avd:.2f}"), contact1.to_list(), contact2.to_list(), d3d4)
+                    match = Match(float(f"{avd:.2f}"), contact1, contact2, d3d4)
                     match_list.append(match)
     
     if len(match_list) == 0:
@@ -151,18 +160,18 @@ def show_contacts(contacts):
 
     # Iterate over the output and count occurrences for each category
     for contact in contacts:
-        category = tuple(contact.type)
+        category = contact.type
         category_counts[category] = category_counts.get(category, 0) + 1
     
     sorted_categories = sorted(category_counts.items(), key=lambda x: x[1])
 
     for category, count in sorted_categories:
-        print(f"\nNumber of {str(category)[1:-1]} occurrences:", count)
-        if count <= 0:
-            print(f"All entries for {str(category)[1:-1]}:")
+        print(f"\nNumber of {category} occurrences:", count)
+        if count <= 5:
+            print(f"All entries for {category}:")
             for entry in contacts:
-                if tuple(entry.type) == category:
-                    print("\t",entry.to_list())
+                if entry.type == category:
+                    print("\t",entry.print_contact())
 
     print(f"\nTotal number of contacts: {len(contacts)}\n")    
 
