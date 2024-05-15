@@ -53,10 +53,22 @@ def parse_pdb(pdb_files):
                         current_chain = Chain(chain_id, residues)
                         current_protein.chains.append(current_chain)
 
-                    if current_residue is None or current_residue.resnum != resnum:  # new residue
+                    # if current_residue is None or current_residue.resnum != resnum:  # new residue
+                    #     atoms = []
+                    #     current_residue = Residue(resnum, resname, atoms, current_chain, False, None)
+                    #     current_chain.residues.append(current_residue)
+
+                    if current_residue is None:  # new residue
                         atoms = []
                         current_residue = Residue(resnum, resname, atoms, current_chain, False, None)
                         current_chain.residues.append(current_residue)
+                    
+                    if current_residue.resnum != resnum:
+                        if len(current_residue.atoms) > 1:
+                            current_chain.residues.append(current_residue) 
+                        atoms = []
+                        current_residue = Residue(resnum, resname, atoms, current_chain, False, None)
+                        #current_chain.residues.append(current_residue)                      
                                                                     
                     atomname = line[12:16].replace(" ", "")
                     if atomname == "OXT": # OXT is the C-terminal Oxygen atom. However, it exhibits the same properties of any Oxygen
