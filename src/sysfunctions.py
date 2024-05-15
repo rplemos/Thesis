@@ -31,7 +31,7 @@ def cl_parse():
         args = parser.parse_args()
 
         mode = args.mode
-        modes = ["TMAlign", "BioPython"]
+        modes = ["TMAlign", "BioPython", "Single"]
         pdb_files = args.pdb
         ref_pdb = args.ref
         start_id = args.start_id
