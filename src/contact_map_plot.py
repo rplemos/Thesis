@@ -25,6 +25,7 @@ def plot_matrix(contact_list, chain_residues, protein_length):
         'hydrogen_bond': 'purple',
         'disulfide_bond': 'yellow',
         'stacking': 'green',
+        'salt_bridge': 'orange',
     }
 
     plt.imshow(np.ones((protein_length, protein_length), dtype=int), cmap='binary')  # Plot the mask
@@ -43,7 +44,8 @@ def plot_matrix(contact_list, chain_residues, protein_length):
     for label, color in color_map.items():
         legend_handles.append(plt.Line2D([0], [0], marker='o', color='w', markersize=10, markerfacecolor=color, label=label))
     
-    plt.legend(handles=legend_handles, loc='upper left', bbox_to_anchor=(1, 1))
+    #plt.legend(handles=legend_handles, loc='upper left', bbox_to_anchor=(1, 1))
+    plt.legend(handles=legend_handles, loc='lower right')
     
     plt.gca().xaxis.set_major_locator(MultipleLocator(round(protein_length/20)))
     plt.gca().yaxis.set_major_locator(MultipleLocator(round(protein_length/20)))    
@@ -54,9 +56,11 @@ def plot_matrix(contact_list, chain_residues, protein_length):
         for contact in contact_list:
             
             if contact.chain1 == current_chain:
-
+                
                 contact.residue_num1 += chain_residues[contact.chain1]
                 contact.residue_num2 += chain_residues[contact.chain2]
+                
+                size = 10
                 
                 if matrix[contact.residue_num1][contact.residue_num2] is None:
                     matrix[contact.residue_num1][contact.residue_num2] = contact.print_values()
@@ -66,12 +70,20 @@ def plot_matrix(contact_list, chain_residues, protein_length):
                 label = contact.type
                 if 'stacking' in label:
                     color = color_map['stacking']
+                    alpha = 1
+                    size = 25
                 elif 'hydrogen_bond' in label or 'hydrophobic' in label:
+                    alpha = 0.5
                     color = color_map[label]
+                elif 'disulfide' in label:
+                    alpha = 1
+                    size = 50
                 else:
+                    alpha = 1
                     color = color_map.get(label, 'black')
+                    size = 25
                 
-                scatter_points.append([contact.residue_num1, contact.residue_num2, color])
+                scatter_points.append([contact.residue_num1, contact.residue_num2, color, alpha, size])
                 
         if i == len(chain_residues) - 1:
             x_next = protein_length
@@ -84,20 +96,22 @@ def plot_matrix(contact_list, chain_residues, protein_length):
         plt.text(median_pos, text_x, current_chain, ha='center')
         plt.text(text_y, median_pos, current_chain, va='center')        
                        
-    x_values, y_values, colors = zip(*scatter_points)
-    
-    scatter = plt.scatter(x=x_values, y=y_values, c=colors, s=10, marker='s')
+    x_values, y_values, colors, alphas, sizes = zip(*scatter_points)
+        
+    scatter = plt.scatter(x=x_values, y=y_values, c=colors, marker='s', alpha=alphas, s=sizes)
                                 
     mplcursors.cursor(scatter, hover=True).connect(
         "add", lambda sel: (
-            sel.annotation.set_text("\n".join(textwrap.wrap(str(matrix[int(sel.target[0])][int(sel.target[1])]), width=50)))
+            sel.annotation.set_text("\n".join(textwrap.wrap(str(matrix[int(sel.target[0])][int(sel.target[1])]), width=100)))
             if (int(sel.target[0]), int(sel.target[1])) in zip(x_values, y_values)
             else sel.annotation.set_text(""),
             sel.annotation.set_bbox({"pad": 10, "facecolor": "white", "edgecolor": "black"})
         )
     )
     
-    plt.title(contact_list[0].id1)
+    plt.suptitle(f"Contact Matrix for {contact_list[0].id1}", fontsize=20)
+    plt.title(f"Protein Size: {protein_length}\nNumber of Contacts: {len(contact_list)}", fontsize=10)
+    
     plt.show()
     
     end = timer()
