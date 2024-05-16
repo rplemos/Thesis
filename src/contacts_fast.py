@@ -15,12 +15,16 @@ def fast_contacts(protein):
     # FOR GETTING ALL THE CHAINS ON THE REFERENCE PROTEIN, AND SETTING TO COMPARE ONLY TO THEM
     chains = [chain.id for chain in protein.chains]
     print(f"Chains to be analyzed: {chains}")
-    print(f"Protein size: {protein.count_residues()} residues")
+    print(f"Protein size:\n\tFull (includes gaps): {protein.full_count()[1]}\n\tTrue (number of residues in the PDB file): {protein.true_count()}\n")
     
     big_ones = ["ARG", "LYS", "GLU", "PHE"]
     
     for i, residue1 in enumerate(residues):
         for j, residue2 in enumerate(residues[i+1:], start=i+1):
+            
+            if residue1.resnum == residue2.resnum:
+                continue
+            
             residue1 = residues[i]
             residue2 = residues[j]
              
@@ -64,8 +68,8 @@ def fast_contacts(protein):
                                     if contact_type == 'hydrogen_bond' and (residue2.resnum - residue1.resnum <= 3): # skips alpha-helix for h-bonds
                                         continue
                                     
-                                    if contact_type == 'hydrogen_bond' or contact_type == 'hydrophobic':
-                                        continue
+                                    # if contact_type == 'hydrogen_bond' or contact_type == 'hydrophobic':
+                                    #     continue
                                     
                                     if distance_range[0] <= distance <= distance_range[1]: # fits the range
                                         if conditions.contact_conditions[contact_type](name1, name2): # fits the type of contact
