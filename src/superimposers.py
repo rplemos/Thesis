@@ -29,7 +29,7 @@ def tmalign_superimpose(pdb_files, ref_pdb, rmsd):
     
     ref_name = os.path.basename(ref_pdb)    
     outputs = [ref_pdb] # starts the output with the reference (samples will be added after their processing)
-    output_dir = "tmalignoutputs"
+    output_dir = "src/tmalignoutputs"
     
     if not os.path.exists(output_dir): # creates output folder if it doesn't exist
         os.mkdir(output_dir)
@@ -63,6 +63,7 @@ def tmalign_superimpose(pdb_files, ref_pdb, rmsd):
             for file in files_to_delete:
                 os.remove(file)
     print("\n-------------------------------------\n")
+    
     return outputs
     
 
