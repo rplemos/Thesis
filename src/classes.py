@@ -19,27 +19,37 @@ class Protein:
             for residue in chain.residues:
                 yield residue
 
-    def get_atoms(self):
-        for residue in self.get_residues():
-            for atom in residue.atoms:
-                yield atom
+    # def get_atoms(self):
+    #     for residue in self.get_residues():
+    #         for atom in residue.atoms:
+    #             yield atom
                 
-    def count_residues(self):
+    def true_count(self):
         return sum(1 for _ in self.get_residues())
-
+    
+    def full_count(self):
+        chain_residues = {}
+        current_size = 0
+        total_size = 0
+        for chain in self.chains:
+            chain_residues[chain.id] = current_size
+            current_size += chain.count_residues()
+            total_size += chain.count_residues()
+            
+        return chain_residues, total_size
+            
 
 class Chain:
     def __init__(self, id, residues):
         self.id = id
         self.residues = residues
 
-    def get_residues(self):
-        for residue in self.residues:
-            yield residue
+    # def get_residues(self):
+    #     for residue in self.residues:
+    #         yield residue
     
     def count_residues(self):
         return self.residues[-1].resnum
-        #return sum(1 for _ in self.get_residues())
 
 
 class Residue:
@@ -51,9 +61,9 @@ class Residue:
         self.ring = ring
         self.normal_vector = normal_vector
 
-    def get_atoms(self):
-        for atom in self.atoms:
-            yield atom
+    # def get_atoms(self):
+    #     for atom in self.atoms:
+    #         yield atom
         
 class Atom:
     def __init__(self, atomname, x, y, z, occupancy, residue):
@@ -97,17 +107,8 @@ class Contact:
     def print_contact(self):
         all_values = list(self.__dict__.values())
         return f"Distance between {all_values[0]}:{all_values[1]}-{all_values[2]}{all_values[3]}:{all_values[4]} and {all_values[5]}:{all_values[6]}-{all_values[7]}{all_values[8]}:{all_values[9]}: {all_values[10]} A. Types: {all_values[11]}"
-    
-    # def to_contact2(self):
-    #     type = str(self.type)[2:-2].replace("'", "")
-    #     return [self.idchain1.split(":")[1], self.residueatom1.split(":")[0], self.idchain2.split(":")[1], 
-    #             self.residueatom2.split(":")[0], [f"{type} ({self.atom1.atomname}:{self.atom2.atomname})"]]
-        
-    # def to_contact(self):
-    #     return [self.idchain1.split(":")[1], self.residueatom1.split(":")[0], self.idchain2.split(":")[1], 
-    #             self.residueatom2.split(":")[0], self.type]
-        
 
+        
 class Match:
     def __init__(self, avd, contact1, contact2, d3d4):
         self.avd = avd
