@@ -5,15 +5,14 @@ import pdb_parser
 import superimposers
 import sysfunctions
 import contacts_fast
-import contact_map
 
-import plot2
+import contact_map_plot
 
 def main():
     
     start = timer()
 
-    mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd, avd_cutoff = sysfunctions.cl_parse()
+    mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd, avd_cutoff, plot = sysfunctions.cl_parse()
     try:
         if not os.path.exists(ref_pdb):
             raise FileNotFoundError(f"Reference file not found: {ref_pdb}")
@@ -25,6 +24,8 @@ def main():
         file_list = superimposers.biopython_superimpose(pdb_files, ref_pdb, atoms_to_be_aligned, rmsd)
     elif mode == "TMAlign":
         file_list = superimposers.tmalign_superimpose(pdb_files, ref_pdb, rmsd)
+    elif mode == "Single":
+        file_list = [ref_pdb]
         
     parsed_proteins = pdb_parser.parse_pdb(file_list)
     
@@ -34,22 +35,14 @@ def main():
         print(f"Detecting contacts for {protein.id}")
         contacts = contacts_fast.fast_contacts(protein)
         contacts_fast.show_contacts(contacts)
-        protein_length = protein.count_residues()
         
-        chain_residues = {}
-        current_size = 0
-        total_size = 0
-        for chain in protein.chains:
-            print(chain.id, chain.count_residues())
-            chain_residues[chain.id] = current_size
-            current_size += chain.count_residues()
-            total_size += chain.count_residues()
-        print("total: ",total_size)
-        print(chain_residues)
+        chain_residues, total_size = protein.full_count()
         
-        #matrix = contact_map.contact_map(contacts, chain_residues, total_size)
-        #contact_map.plot_matrix(matrix)
-        plot2.plot_matrix(contacts, chain_residues, total_size)
+        # don't run both at the same time (they return the same thing, the first just plots as well)
+        if plot:
+            contact_map_plot.plot_matrix(contacts, chain_residues, total_size)
+        #contact_map_plot.contact_matrix(contacts, chain_residues, total_size)
+        
         if ref_contacts is None:
             ref_contacts = contacts
         else:
@@ -64,9 +57,9 @@ def main():
     #     sorted_match_list = sorted(match_list, key=lambda x: x.avd)
     #     for match in sorted_match_list:
     #         if match.d3d4:
-    #             print(match.avd, match.contact1, match.contact2, match.d3d4)
+    #             print(match.avd, match.contact1.print_values(), match.contact2.print_values(), match.d3d4)
     #         else:
-    #             print("\t", match.avd, match.contact1, match.contact2, match.d3d4)
+    #             print("\t", match.avd, match.contact1.print_values(), match.contact2.print_values(), match.d3d4)
 
     # if match_list:
     #     cont = 0
