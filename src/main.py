@@ -12,7 +12,8 @@ def main():
     
     start = timer()
 
-    mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd, avd_cutoff, plot = sysfunctions.cl_parse()
+    mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd, avd_cutoff, plot, fast = sysfunctions.cl_parse()
+    
     try:
         if not os.path.exists(ref_pdb):
             raise FileNotFoundError(f"Reference file not found: {ref_pdb}")
@@ -33,7 +34,7 @@ def main():
     ref_protein = parsed_proteins[0].id
     for protein in parsed_proteins:
         print(f"Detecting contacts for {protein.id}")
-        contacts = contacts_fast.fast_contacts(protein)
+        contacts = contacts_fast.fast_contacts(protein, fast)
         contacts_fast.show_contacts(contacts)
         
         chain_residues, total_size = protein.full_count()

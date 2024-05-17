@@ -6,7 +6,7 @@ from classes import Contact, Match
 import conditions
 
 
-def fast_contacts(protein):
+def fast_contacts(protein, fast):
     start = timer()
     
     residues = list(protein.get_residues())
@@ -65,17 +65,18 @@ def fast_contacts(protein):
                             if distance <= 6: # max distance for contacts
                                 contact_types = []
                                 for contact_type, distance_range in conditions.categories.items():
+                                    
+                                    if not fast:
+                                        if contact_type == 'hydrogen_bond' or contact_type == 'hydrophobic':
+                                            continue                                
+                                    
                                     if contact_type == 'hydrogen_bond' and (residue2.resnum - residue1.resnum <= 3): # skips alpha-helix for h-bonds
                                         continue
-                                    
-                                    # if contact_type == 'hydrogen_bond' or contact_type == 'hydrophobic':
-                                    #     continue
                                     
                                     if distance_range[0] <= distance <= distance_range[1]: # fits the range
                                         if conditions.contact_conditions[contact_type](name1, name2): # fits the type of contact
                                             # if distance_ca > 13 and residue1.resname == 'ARG' and residue2.resname == 'ARG': # checking the weird distant ones
                                             #     print(distance, distance_ca, residue1.chain.id, residue1.resnum, name1, residue2.chain.id, residue2.resnum, name2)
-
                                             contact_types.append(contact_type)
 
                                 if contact_types:                          
@@ -89,7 +90,7 @@ def fast_contacts(protein):
                             pass
                             #print(f"Unknown atom: {name1} or {name2}")      
     end = timer()
-    print(f"Time elapsed: {end - start}\n")
+    print(f"Contact Detection - Time elapsed: {end - start}\n")
 
     return contacts
 
