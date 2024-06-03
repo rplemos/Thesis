@@ -24,9 +24,6 @@ def fast_contacts(protein, fast):
             
             if residue1.resnum == residue2.resnum:
                 continue
-            
-            residue1 = residues[i]
-            residue2 = residues[j]
              
             if residue1.chain.id in chains and residue2.chain.id in chains:
                 ca1, ca2 = residue1.atoms[1], residue2.atoms[1] # alpha carbons
@@ -60,8 +57,10 @@ def fast_contacts(protein, fast):
                         name1 = f"{atom1.residue.resname}:{atom1.atomname}" # matches the pattern from contacts dictionary
                         name2 = f"{atom2.residue.resname}:{atom2.atomname}"
                         if name1 in conditions.contact_types and name2 in conditions.contact_types: # excludes the RNG atom and any different other
+                         
                             if atom1.atomname != 'CA' and atom2.atomname != 'CA': # no need to calculate again for alpha carbons
                                 distance = dist((atom1.x, atom1.y, atom1.z), (atom2.x, atom2.y, atom2.z))
+                                
                             if distance <= 6: # max distance for contacts
                                 contact_types = []
                                 for contact_type, distance_range in conditions.categories.items():
@@ -70,7 +69,7 @@ def fast_contacts(protein, fast):
                                         if contact_type == 'hydrogen_bond' or contact_type == 'hydrophobic':
                                             continue                                
                                     
-                                    if contact_type == 'hydrogen_bond' and (residue2.resnum - residue1.resnum <= 3): # skips alpha-helix for h-bonds
+                                    if contact_type == 'hydrogen_bond' and (abs(residue2.resnum - residue1.resnum) <= 3): # skips alpha-helix for h-bonds
                                         continue
                                     
                                     if distance_range[0] <= distance <= distance_range[1]: # fits the range
@@ -79,7 +78,12 @@ def fast_contacts(protein, fast):
                                             #     print(distance, distance_ca, residue1.chain.id, residue1.resnum, name1, residue2.chain.id, residue2.resnum, name2)
                                             contact_types.append(contact_type)
 
-                                if contact_types:                          
+                                if contact_types:
+                                    
+                                    if residue1.chain.id != residue2.chain.id:
+                                        pass
+                                        #print(residue1.chain.id, residue1.resname, residue1.resnum, residue2.chain.id, residue2.resname, residue2.resnum)
+                                                              
                                     contact = Contact(protein.id, residue1.chain.id, residue1.resnum, residue1.resname, atom1.atomname, 
                                                     protein.id, residue2.chain.id, residue2.resnum, residue2.resname, atom2.atomname, 
                                                     float(f"{distance:.2f}"), contact_types[0], atom1, atom2)
@@ -176,7 +180,7 @@ def show_contacts(contacts):
             print(f"All entries for {category}:")
             for entry in contacts:
                 if entry.type == category:
-                    print("\t",entry.print_contact())
+                    print("\t",entry.print_text())
 
     print(f"\nTotal number of contacts: {len(contacts)}\n")    
 

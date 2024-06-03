@@ -31,11 +31,13 @@ class Protein:
         chain_residues = {}
         current_size = 0
         total_size = 0
+        
         for chain in self.chains:
+            residue_count = chain.count_residues()
             chain_residues[chain.id] = current_size
-            current_size += chain.count_residues()
-            total_size += chain.count_residues()
-            
+            current_size += residue_count
+            total_size += residue_count
+
         return chain_residues, total_size
             
 
@@ -94,9 +96,9 @@ class Contact:
         self.atom_object1 = atom_object1
         self.atom_object2 = atom_object2
         
-    def get_values(self):
-        all_values = list(self.__dict__.values())
-        return all_values[:-2]
+    # def get_values(self):
+    #     all_values = list(self.__dict__.values())
+    #     return all_values[:-2]
     
     def print_values(self):
         all_values = list(self.__dict__.values())
@@ -104,8 +106,10 @@ class Contact:
                 f"{all_values[5]}:{all_values[6]}", f"{all_values[7]}{all_values[8]}:{all_values[9]}",
                 all_values[10], all_values[11]]
     
-    def print_contact(self):
+    def print_text(self):
         all_values = list(self.__dict__.values())
+        return f"{all_values[1]}-{all_values[2]}{all_values[3]}:{all_values[4]} and {all_values[6]}-{all_values[7]}{all_values[8]}:{all_values[9]}: {all_values[10]} A. {all_values[11].capitalize()}"
+
         return f"Distance between {all_values[0]}:{all_values[1]}-{all_values[2]}{all_values[3]}:{all_values[4]} and {all_values[5]}:{all_values[6]}-{all_values[7]}{all_values[8]}:{all_values[9]}: {all_values[10]} A. Types: {all_values[11]}"
 
         

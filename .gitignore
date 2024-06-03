@@ -8,3 +8,5 @@ txts/
 /src/tmalignoutputs/
 /src/TMAlign
 TMAlign
+/benchmark/cs1/
+/src/*.pse

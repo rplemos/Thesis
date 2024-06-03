@@ -41,9 +41,10 @@ def main():
         
         # don't run both at the same time (they return the same thing, the first just plots as well)
         if plot:
-            contact_map_plot.plot_matrix(contacts, chain_residues, total_size)
-        #contact_map_plot.contact_matrix(contacts, chain_residues, total_size)
-        
+            matrix = contact_map_plot.plot_matrix(contacts, chain_residues, total_size)
+        else:
+            matrix = contact_map_plot.contact_matrix(contacts, chain_residues, total_size)
+                    
         if ref_contacts is None:
             ref_contacts = contacts
         else:

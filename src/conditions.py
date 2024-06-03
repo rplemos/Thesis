@@ -2,7 +2,7 @@
 # 1 - must be made by different residue atoms
 # 2 - aromatic = aromatic + aromatic
 # 3 - hydrogenb => aceptor + donor
-# 4 - hidrophobic: hidrofobic + hidrofobic
+# 4 - hydrophobic: hydrofobic + hydrofobic
 # 5 - Repulsive: positive=>positive or negative=>negative
 # 6 - Atractive: positive=>negative or negative=>positive
 # 7 - salt_bridge: positive=>negative or negative=>positive

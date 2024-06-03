@@ -54,7 +54,6 @@ def plot_matrix(contact_list, chain_residues, protein_length):
     
     for current_chain in chain_residues.keys():
         for contact in contact_list:
-            
             if contact.chain1 == current_chain:
                 
                 res1 = contact.residue_num1 + chain_residues[contact.chain1]
@@ -63,9 +62,9 @@ def plot_matrix(contact_list, chain_residues, protein_length):
                 size = 10
                 
                 if matrix[res1][res2] is None:
-                    matrix[res1][res2] = contact.print_values()
+                    matrix[res1][res2] = contact.print_text()
                 else:
-                    matrix[res1][res2] += contact.print_values()
+                    matrix[res1][res2] += f" | {contact.print_text()}"
 
                 label = contact.type
                 if 'stacking' in label:
@@ -84,8 +83,7 @@ def plot_matrix(contact_list, chain_residues, protein_length):
                     size = 25
                 
                 scatter_points.append([res1, res2, color, alpha, size])
-        
-        
+            
     for i, (current_chain, x) in enumerate(chain_residues.items()):
         
         if i == len(chain_residues) - 1:
@@ -105,8 +103,7 @@ def plot_matrix(contact_list, chain_residues, protein_length):
 
         tick_labels.append([i for i in range(0, (x_next - x), 20)])
         tick_positions.append([i for i in range(x, x_next, 20)])  
-        
-        
+            
     tick_labels = [item for sublist in tick_labels for item in sublist]
     tick_positions = [item for sublist in tick_positions for item in sublist]
         
@@ -122,7 +119,7 @@ def plot_matrix(contact_list, chain_residues, protein_length):
                                 
     mplcursors.cursor(scatter, hover=True).connect(
         "add", lambda sel: (
-            sel.annotation.set_text("\n".join(textwrap.wrap(str(matrix[int(sel.target[0])][int(sel.target[1])]), width=100)))
+            sel.annotation.set_text("\n".join(textwrap.wrap(str(matrix[int(sel.target[0])][int(sel.target[1])]), width=66)))
             if (int(sel.target[0]), int(sel.target[1])) in zip(x_values, y_values)
             else sel.annotation.set_text(""),
             sel.annotation.set_bbox({"pad": 10, "facecolor": "white", "edgecolor": "black"})
