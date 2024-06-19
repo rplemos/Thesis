@@ -12,7 +12,9 @@ def main():
     
     start = timer()
 
-    mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd, avd_cutoff, plot, fast = sysfunctions.cl_parse()
+    mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd, avd_cutoff, plot, fast, show_contacts = sysfunctions.cl_parse()
+    
+    print(show_contacts)
     
     try:
         if not os.path.exists(ref_pdb):
@@ -27,16 +29,30 @@ def main():
         file_list = superimposers.tmalign_superimpose(pdb_files, ref_pdb, rmsd)
     elif mode == "Single":
         file_list = [ref_pdb]
+    elif mode == "Benchmark":
+        file_list = pdb_files
         
     parsed_proteins = pdb_parser.parse_pdb(file_list)
     
     ref_contacts = None
     ref_protein = parsed_proteins[0].id
+    
+    maximum_distances = {}
+    
     for protein in parsed_proteins:
         print(f"Detecting contacts for {protein.id}")
-        contacts = contacts_fast.fast_contacts(protein, fast)
-        contacts_fast.show_contacts(contacts)
+        chains = [chain.id for chain in protein.chains]
+        print(f"Number of chains: {len(chains)}")
+        print(f"Chains to be analyzed: {chains}")
+        print(f"Protein size:\n\tFull (includes gaps): {protein.full_count()[1]}\n\tTrue (number of residues in the PDB file): {protein.true_count()}\n")
         
+        contacts, time = contacts_fast.fast_contacts(protein, fast, maximum_distances)
+        print(f"Number of contacts: {len(contacts)}")
+        print(f"Contact Detection - Time elapsed: {time}\n")
+        
+        if show_contacts:
+            contacts_fast.show_contacts(contacts)
+                
         chain_residues, total_size = protein.full_count()
         
         # don't run both at the same time (they return the same thing, the first just plots as well)
@@ -44,16 +60,22 @@ def main():
             matrix = contact_map_plot.plot_matrix(contacts, chain_residues, total_size)
         else:
             matrix = contact_map_plot.contact_matrix(contacts, chain_residues, total_size)
-                    
-        if ref_contacts is None:
-            ref_contacts = contacts
-        else:
-            match_list, average_avd, contact_matches = contacts_fast.avd(ref_contacts, contacts, avd_cutoff)
-            if match_list is not None:
-                print(f"Average AVD for {ref_protein} and {protein.id} (old): {average_avd}\nNumber of contact matches found: {contact_matches}\n")
+        
+        if mode != "Benchmark":            
+            if ref_contacts is None:
+                ref_contacts = contacts
             else:
-                print(f"No contact matches found between {ref_protein} and {protein.id}.\nTry increasing the cutoff value.\n")     
+                match_list, average_avd, contact_matches = contacts_fast.avd(ref_contacts, contacts, avd_cutoff)
+                if match_list is not None:
+                    print(f"Average AVD for {ref_protein} and {protein.id} (old): {average_avd}\nNumber of contact matches found: {contact_matches}\n")
+                else:
+                    print(f"No contact matches found between {ref_protein} and {protein.id}.\nTry increasing the cutoff value.\n")     
         print("-------------------------------------\n")
+     
+    # ascending_distances = sorted(maximum_distances.items(), key=lambda x:x[1][0]) 
+    # for item in ascending_distances:
+    #     print(item)
+    # print(len(ascending_distances))    
 
     # if match_list:
     #     sorted_match_list = sorted(match_list, key=lambda x: x.avd)
