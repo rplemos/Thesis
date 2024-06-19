@@ -27,13 +27,14 @@ def cl_parse():
         parser.add_argument('-e', '--end_id', type=int, required=False, default=100, help='End ID for atom alignment. Only for BioPython mode. Default = 100')
         parser.add_argument('-rmsd', type=float, required=False, default=999, help='Sets the RMSD cutoff value. Only for TMAlign mode')
         parser.add_argument('-avd', '--avd_cutoff', type=float, required=False, default=1.0, help='Sets the AVD cutoff value. Default = 1.0')
-        parser.add_argument('-plot', action='store_true', help='Set if the contact matrix is plotted')
-        parser.add_argument('-fast', action='store_false', help='Set if Hydrogen Bond and Hydrophobic contacts are calculated')
+        parser.add_argument('-plot', action='store_true', required=False, help='Set if the contact matrix is plotted')
+        parser.add_argument('-fast', action='store_false', required=False, help='Set if Hydrogen Bond and Hydrophobic contacts are calculated')
+        parser.add_argument('-show', '--show_contacts', required=False, action='store_true', help='Shows a list of all contacts')
 
         args = parser.parse_args()
         
         mode = args.mode
-        modes = ["TMAlign", "BioPython", "Single"]
+        modes = ["TMAlign", "BioPython", "Single", "Benchmark"]
         pdb_files = args.pdb
         ref_pdb = args.ref
         start_id = args.start_id
@@ -42,6 +43,7 @@ def cl_parse():
         avd_cutoff = args.avd_cutoff
         plot = args.plot
         fast = args.fast
+        show_contacts = args.show_contacts
                         
         if mode not in modes:
             raise ValueError("Invalid Mode!")
@@ -73,7 +75,7 @@ def cl_parse():
         print(f"An unexpected error occurred: {str(e)}")
         sys.exit(1)
        
-    return mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd_value, avd_cutoff, plot, fast
+    return mode, pdb_files, ref_pdb, atoms_to_be_aligned, rmsd_value, avd_cutoff, plot, fast, show_contacts
         
 def validate_file(value):
     """
