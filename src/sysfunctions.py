@@ -90,9 +90,10 @@ def validate_file(value):
     Returns:
         str: The validated file path.
     """
-    if not value.endswith('.pdb'):
-        raise argparse.ArgumentTypeError(f"{value} is not a valid PDB file. File must end with '.pdb'")
-    return value
+    if value.endswith('.pdb') or value.endswith('.pdbx') or value.endswith('.cif'):
+        return value
+    else:
+        raise argparse.ArgumentTypeError(f"{value} is not a valid file. File must end with '.pdb', '.pdbx', or '.cif'")
 
 def TMAlign_check():
     """
