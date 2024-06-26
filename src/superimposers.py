@@ -5,22 +5,9 @@ import subprocess
 import re
 import glob
 import sys
+import concurrent.futures
 
-    
-def tmalign_superimpose(pdb_files, ref_pdb, rmsd):
-    """
-    Performs superimposition using TMAlign. This is the default mode to superimpose structures.
-    Only structures that pass the RMSD threshold parameter are saved.
-    
-    Args:
-        pdb_files (list): List of paths to PDB files to be aligned.
-        ref_pdb (str): Path to the reference PDB file.
-        rmsd (float): RMSD threshold for accepting alignments.
-
-    Returns:
-        .pdb files of the aligned proteins that pass the RMSD threshold. These files are stored in the 'tmalignoutputs' folder.
-        list: List of paths to the aligned PDB files.
-    """
+def prepare_tmalign_superimpose(pdb_files, ref_pdb, rmsd):
     
     print("---TMAlign Mode Selected---\n")
     sysfunctions.TMAlign_check()  # check the status of the TMAlign executable
@@ -28,18 +15,31 @@ def tmalign_superimpose(pdb_files, ref_pdb, rmsd):
     executable = "./TMAlign"
     
     ref_name = os.path.basename(ref_pdb)    
-    outputs = [ref_pdb] # starts the output with the reference (samples will be added after their processing)
     output_dir = "src/tmalignoutputs"
+    outputs = []
     
     if not os.path.exists(output_dir): # creates output folder if it doesn't exist
         os.mkdir(output_dir)
     print(f"Comparing to: {ref_name}")
-    for sample in pdb_files:
-        sample_name = os.path.basename(sample)
-        if sample_name == ref_name: # exclude same protein comparison
-            continue
-        output_name = f"{output_dir}/{sample_name.split('.')[0]}_aligned"
+    
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        futures = {executor.submit(execute_tmalign_superimpose, sample, ref_pdb, output_dir, executable, rmsd): sample for sample in pdb_files}
         
+        for future in concurrent.futures.as_completed(futures):
+            output = future.result()
+            outputs.append(output)
+        
+    return outputs
+
+def execute_tmalign_superimpose(sample, ref_pdb, output_dir, executable, rmsd):
+    sample_name = os.path.basename(sample)
+
+    output_name = f"{output_dir}/{sample_name.split('.')[0]}_aligned"
+    final_name = f"{output_name}_rotate.pdb"
+    
+    if os.path.exists(final_name):
+        print(f"{final_name} already exists")
+    else:    
         # runs TMAlign (current sample vs. reference protein)
         # suppresses the verbosity and captures it to process the RMSD values
         result = subprocess.run([executable, sample, ref_pdb, "-o", output_name], capture_output=True, text=True)
@@ -55,17 +55,14 @@ def tmalign_superimpose(pdb_files, ref_pdb, rmsd):
             for file in files_to_delete:
                 os.remove(file)
         else: # RMSD is lower than the cutoff
-            outputs.append(f"{output_name}_rotate.pdb")
-            print(f"RMSD value for file '{sample_name}': {rmsd_value[0]}.\t PDB File '{output_name}_rotate.pdb' created!")
+            print(f"RMSD value for file '{sample_name}': {rmsd_value[0]}.\t PDB File '{final_name}' created!")
             files_to_delete = glob.glob(os.path.join(output_name + '*'))
             # keeps only the .pdb files
             files_to_delete = [file for file in files_to_delete if not file.endswith(".pdb")]
             for file in files_to_delete:
                 os.remove(file)
-    print("\n-------------------------------------\n")
     
-    return outputs
-    
+    return final_name
 
 def biopython_superimpose(pdb_files, ref_pdb, atoms_to_be_aligned, rmsd):
     """
