@@ -15,19 +15,20 @@ def prepare_tmalign_superimpose(pdb_files, ref_pdb, rmsd):
     executable = "./TMAlign"
     
     ref_name = os.path.basename(ref_pdb)    
-    output_dir = "src/tmalignoutputs"
+    output_dir = f"src/tmalignoutputs/reference_{ref_name[:4]}"
     outputs = []
     
     if not os.path.exists(output_dir): # creates output folder if it doesn't exist
         os.mkdir(output_dir)
     print(f"Comparing to: {ref_name}")
     
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
         futures = {executor.submit(execute_tmalign_superimpose, sample, ref_pdb, output_dir, executable, rmsd): sample for sample in pdb_files}
         
         for future in concurrent.futures.as_completed(futures):
             output = future.result()
-            outputs.append(output)
+            if output is not None:
+                outputs.append(output)
         
     return outputs
 
@@ -42,10 +43,12 @@ def execute_tmalign_superimpose(sample, ref_pdb, output_dir, executable, rmsd):
     else:    
         # runs TMAlign (current sample vs. reference protein)
         # suppresses the verbosity and captures it to process the RMSD values
-        result = subprocess.run([executable, sample, ref_pdb, "-o", output_name], capture_output=True, text=True)
+        align = subprocess.run([executable, sample, ref_pdb, "-o", output_name], capture_output=True, text=True)
         
         # uses RE to get the RMSD value from the suppressed output
-        rmsd_value = re.findall(r'RMSD\s*=\s*([\d.]+)', result.stdout)
+        rmsd_value = re.findall(r'RMSD\s*=\s*([\d.]+)', align.stdout)
+        if not rmsd_value: # error to align (DNA/RNA file?)
+            return
         
         # if the RMSD is greater than the cutoff, deletes the generated files
         # this has room to improve! is there a way to just not create the files, instead of deleting them?
