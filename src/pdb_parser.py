@@ -25,12 +25,22 @@ def parse_pdb(pdb_file):
     current_protein = Protein()
     current_chain = None
     current_residue = None
+    
+    valid_residues =  ['ALA', 'CYS', 'ASP', 'GLU', 'PHE', 'GLY', 'HIS', 'ILE', 'LYS', 'LEU',
+                        'MET', 'ASN', 'PRO', 'GLN', 'ARG', 'SER', 'THR', 'VAL', 'TRP', 'TYR']
 
     with open(pdb_file) as f:
         for line in f:
             line = line.strip()
+            
+            if line == "ENDMDL":
+                return current_protein
 
-            if line.startswith("HEADER"):
+            if line.startswith("HEADER") and ("RNA" in line or "DNA" in line):
+                current_protein.id = pdb_file.split("/")[-1][:4]
+                current_protein.title = "DNA/RNA"
+                break
+            elif line.startswith("HEADER"):
                 current_protein.id = line[62:]
                 
             elif line.startswith("TITLE"):
@@ -42,9 +52,12 @@ def parse_pdb(pdb_file):
                 if resnum <= 0:
                     continue
                 resname = line[17:20]
-
+                
                 if resname == "HIE" or resname == "HID":  # alternative names for protonated histidines
-                    resname = "HIS"                        
+                    resname = "HIS" 
+                
+                if resname not in valid_residues:
+                    continue                       
 
                 if current_chain is None or current_chain.id != chain_id:  # new chain
                     residues = []
