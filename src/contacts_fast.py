@@ -11,23 +11,27 @@ def fast_contacts(protein, fast, maximum_distances):
     
     residues = list(protein.get_residues())
     contacts = []
-            
+    
     for i, residue1 in enumerate(residues):
         for j, residue2 in enumerate(residues[i+1:], start=i+1):
             
             if residue1.resnum == residue2.resnum and residue1.chain.id == residue2.chain.id: # ignores same residue
                 continue
-             
-            ca1, ca2 = residue1.atoms[1], residue2.atoms[1] # alpha carbons
-            distance_ca = dist((ca1.x, ca1.y, ca1.z), (ca2.x, ca2.y, ca2.z))
             
-            pair = tuple(sorted((residue1.resname, residue2.resname)))
-            if distance_ca > (distances.distances[pair] + 1):
+            if len(residue1.atoms) > 1 and len(residue2.atoms) > 1:
+                ca1, ca2 = residue1.atoms[1], residue2.atoms[1] # alpha carbons
+
+                distance_ca = dist((ca1.x, ca1.y, ca1.z), (ca2.x, ca2.y, ca2.z))
+            
+                # pair = tuple(sorted((residue1.resname, residue2.resname)))
+                # if distance_ca > (distances.distances[pair] + 1):
+                #     continue
+
+                if distance_ca > 20:
+                    continue
+                
+            else:
                 continue              
-            
-            # if distance_ca > 20:
-            #     #pass
-            #     continue # skips the current residue 2
             
             # CHECKING FOR AROMATIC STACKINGS
             if residue1.ring and residue2.ring:
@@ -82,13 +86,13 @@ def fast_contacts(protein, fast, maximum_distances):
                                         
                                     ####################
                                     # BLOCK FOR CONSTRUCTING MAXIMUM DISTANCES LIST                   
-                                    # if (residue1.resname, residue2.resname) not in maximum_distances:
-                                    #     maximum_distances[residue1.resname, residue2.resname] = [float(f"{distance_ca:.2f}"), residue1.resnum, residue2.resnum, protein.id, atom1.atomname, atom2.atomname, residue1.chain.id, residue2.chain.id, contact_types[0]]
-                                    #     #print(f"Creating {residue1.resname, residue2.resname} : {distance_ca}")
-                                    # elif distance_ca > maximum_distances[residue1.resname, residue2.resname][0]:
-                                    #     #print(f"Changing {residue1.resname, residue2.resname} from {maximum_distances[residue1.resname, residue2.resname][0]} to {distance_ca}")
-                                    #     maximum_distances[residue1.resname, residue2.resname] = [float(f"{distance_ca:.2f}"), residue1.resnum, residue2.resnum, protein.id, atom1.atomname, atom2.atomname, residue1.chain.id, residue2.chain.id, contact_types[0]]
-                                    ####################
+                                    if (residue1.resname, residue2.resname) not in maximum_distances:
+                                        maximum_distances[residue1.resname, residue2.resname] = [float(f"{distance_ca:.2f}"), residue1.resnum, residue2.resnum, protein.id, atom1.atomname, atom2.atomname, residue1.chain.id, residue2.chain.id, contact_types[0]]
+                                        #print(f"Creating {residue1.resname, residue2.resname} : {distance_ca}")
+                                    elif distance_ca > maximum_distances[residue1.resname, residue2.resname][0]:
+                                        #print(f"Changing {residue1.resname, residue2.resname} from {maximum_distances[residue1.resname, residue2.resname][0]} to {distance_ca}")
+                                        maximum_distances[residue1.resname, residue2.resname] = [float(f"{distance_ca:.2f}"), residue1.resnum, residue2.resnum, protein.id, atom1.atomname, atom2.atomname, residue1.chain.id, residue2.chain.id, contact_types[0]]
+                                    # ###################
                                                                                                             
                     else: # for control over non-standard atom names
                         pass
@@ -97,7 +101,7 @@ def fast_contacts(protein, fast, maximum_distances):
     end = timer()
     current_time = end - start
 
-    return contacts, current_time
+    return contacts, current_time, maximum_distances
 
 
 def avd(contact_list_protein1, contact_list_protein2, cutoff):
@@ -176,7 +180,7 @@ def show_contacts(contacts):
 
     for category, count in sorted_categories:
         print(f"\nNumber of {category} occurrences:", count)
-        if count <= 2:
+        if count <= 9999:
             print(f"All entries for {category}:")
             for entry in contacts:
                 if entry.type == category:

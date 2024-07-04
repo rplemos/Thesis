@@ -51,7 +51,7 @@ class Chain:
     #         yield residue
     
     def count_residues(self):
-        return self.residues[-1].resnum
+        return self.residues[-1].resnum if len(self.residues) > 1 else 0
 
 
 class Residue:
