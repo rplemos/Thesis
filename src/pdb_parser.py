@@ -40,6 +40,7 @@ def parse_pdb(pdb_file):
                 current_protein.id = pdb_file.split("/")[-1][:4]
                 current_protein.title = "DNA/RNA"
                 break
+            
             elif line.startswith("HEADER"):
                 current_protein.id = line[62:]
                 
@@ -132,10 +133,16 @@ def calc_normal_vector(ring_atoms):
 
 
 def parse_pdbx(pdbx_file):
+            
+    valid_residues =  ['ALA', 'CYS', 'ASP', 'GLU', 'PHE', 'GLY', 'HIS', 'ILE', 'LYS', 'LEU',
+                        'MET', 'ASN', 'PRO', 'GLN', 'ARG', 'SER', 'THR', 'VAL', 'TRP', 'TYR']
     
     current_protein = Protein()
     current_chain = None
     current_residue = None
+    atomsite_block = False # _atom_site. lines
+    atominfo_block = False # ATOM        lines
+    atom_lines = []
 
     with open(pdbx_file) as f:
         for line in f:
@@ -143,20 +150,52 @@ def parse_pdbx(pdbx_file):
 
             if line.startswith("_entry.id"):
                 current_protein.id = line[-4:]
-            
                 
             elif line.startswith("TITLE"):
                 current_protein.set_title(line[10:])
+                            
+            elif line.startswith("_atom_site.group_PDB"):
+                atomsite_block = True
+                line = line.split(".")[1]
+                atom_lines.append(line)
                 
-            elif line.startswith("ATOM"):
-                chain_id = line[26:28]
-                resnum = int(line[31:35].replace(" ",""))
+            elif atomsite_block and line.startswith("_atom_site"):
+                line = line.split(".")[1]
+                atom_lines.append(line)
+                
+            elif atomsite_block and line.startswith("ATOM"):
+                                
+                atomname_index = atom_lines.index("label_atom_id")
+                resname_index = atom_lines.index("label_comp_id")
+                chain_index = atom_lines.index("label_asym_id")
+                resnum_index = atom_lines.index("label_seq_id")
+                x_index = atom_lines.index("Cartn_x")
+                y_index = atom_lines.index("Cartn_y")
+                z_index = atom_lines.index("Cartn_z")
+                occupancy_index = atom_lines.index("occupancy")
+                model_index = atom_lines.index("pdbx_PDB_model_num")
+                                                               
+                atomsite_block = False
+                atominfo_block = True
+                
+            elif line.startswith("ATOM") and atominfo_block:
+                line = line.split()
+                
+                model = int(line[model_index])
+                if model != 1: 
+                    return current_protein
+                
+                chain_id = line[chain_index]
+                resnum = int(line[resnum_index])
                 if resnum <= 0:
                     continue
-                resname = line[22:25]
+                resname = line[resname_index]
 
                 if resname == "HIE" or resname == "HID":  # alternative names for protonated histidines
-                    resname = "HIS"                        
+                    resname = "HIS"  
+
+                if resname not in valid_residues:
+                    continue                            
 
                 if current_chain is None or current_chain.id != chain_id:  # new chain
                     residues = []
@@ -175,12 +214,12 @@ def parse_pdbx(pdbx_file):
                     current_residue = Residue(resnum, resname, atoms, current_chain, False, None)
                     #current_chain.residues.append(current_residue)                      
                                                                 
-                atomname = line[17:20].replace(" ", "")
+                atomname = line[atomname_index]
                 if atomname == "OXT": # OXT is the C-terminal Oxygen atom. However, it exhibits the same properties of any Oxygen
                     atomname = atomname.replace("OXT","O")                
                 
-                x, y, z = float(line[37:44]), float(line[45:52]), float(line[53:60])
-                occupancy = float(line[61:65])
+                x, y, z = float(line[x_index]), float(line[y_index]), float(line[z_index])
+                occupancy = float(line[occupancy_index])
                 
                 if occupancy >= 0: # ignores low quality atoms (arbitrary value!)
                     atom = Atom(atomname, x, y, z, occupancy, current_residue) # creates atom
@@ -202,17 +241,5 @@ def parse_pdbx(pdbx_file):
 
                         normal_vector = calc_normal_vector(ring_atoms)
                         current_residue.normal_vector = normal_vector
-
-            elif line.startswith("END"):  # finishes and resets everything for the new protein
-                
-                # Handling cases where there is no ID
-                if current_protein.id is None:
-                    id = str(pdbx_file).split("/")[-1]
-                    id = id.split(".")[0]
-                    current_protein.id = id  
-                                        
-                current_protein = None
-                current_chain = None
-                current_residue = None
-                
+     
     return current_protein
