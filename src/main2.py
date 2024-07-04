@@ -8,6 +8,9 @@ import contacts_fast
 import contact_map_plot
 
 import concurrent.futures
+import multiprocessing
+import pickle
+import resource
 
 def main():
 
@@ -34,27 +37,52 @@ def main():
     if mode != "Benchmark" and mode != "Single":
         ref_protein, ref_contacts, ref_time = process_file(ref_pdb, fast)
         print(f"Reference file processing time: {ref_time}")
-            
-    with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
-        future_to_file = {executor.submit(process_file, file_path, fast): file_path for file_path in file_list}
         
-        for future in concurrent.futures.as_completed(future_to_file):
+    manager = multiprocessing.Manager()
+    maximum_distances = manager.dict()
+
+    progress_list = manager.list()
+    lock = manager.Lock()
+    batch_size = 100
+    batch_results = []
+    batch_number = 0
+    
+    total_files = len(file_list)
+            
+    with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
+        future_to_file = {executor.submit(process_file, file_path, fast, maximum_distances, lock, progress_list): file_path for file_path in file_list}
+        
+        for i, future in enumerate(concurrent.futures.as_completed(future_to_file)):
+            
             try:
-                protein, contacts, time = future.result()
+                protein, contacts, time, maximum_distances = future.result()
                 
+                #batch_results.append(future.result())
+
+                # Save and clear results every batch_size files
+                # if (i + 1) % batch_size == 0:
+                #     save_results(batch_results, batch_number)
+                #     batch_results.clear()  # Clear the list to free memory
+                #     gc.collect()  # Trigger garbage collection to free memory
+                #     batch_number += 1
+                                    
                 if protein.title == "DNA/RNA":
                     print(f"File '{protein.id}' is not a Protein! Ignoring File\n")
                     print("-----------------------------------------------------\n")
                     continue
                 
-                print(f"Detecting contacts for {protein.id}")
+                # print(f"Detecting contacts for {protein.id}")
+                # chains = [chain.id for chain in protein.chains]
+                # print(f"Number of chains: {len(chains)}")
+                # print(f"Chains to be analyzed: {chains}")
+                # print(f"Protein size:\n\tFull (includes gaps): {protein.full_count()[1]}\n\tTrue (number of residues in the PDB file): {protein.true_count()}\n")
+                # print(f"Number of contacts: {len(contacts)}")
+                # print(f"Contact Detection - Time elapsed: {time}\n")
+                
+                print_memory_usage()
                 chains = [chain.id for chain in protein.chains]
-                print(f"Number of chains: {len(chains)}")
-                print(f"Chains to be analyzed: {chains}")
-                print(f"Protein size:\n\tFull (includes gaps): {protein.full_count()[1]}\n\tTrue (number of residues in the PDB file): {protein.true_count()}\n")
-
-                print(f"Number of contacts: {len(contacts)}")
-                print(f"Contact Detection - Time elapsed: {time}\n")
+                print(protein.id, len(chains), chains)
+                print(protein.full_count()[1], protein.true_count(), len(contacts), f"{time:.4f}")
                 
                 if show_contacts:
                     contacts_fast.show_contacts(contacts)
@@ -62,11 +90,8 @@ def main():
                 chain_residues, total_size = protein.full_count()
                 true_size = protein.true_count()
                 
-                # don't run both at the same time (they return the same thing, the first just plots as well)
                 if plot:
                     contact_map_plot.plot_matrix(contacts, chain_residues, total_size)
-                # else:
-                #     matrix = contact_map_plot.contact_matrix(contacts, chain_residues, total_size)
 
                 if mode != "Benchmark" and mode != "Single":            
                     match_list, average_avd, contact_matches = contacts_fast.avd(ref_contacts, contacts, avd_cutoff)
@@ -76,22 +101,53 @@ def main():
                         print(f"No contact matches found between {ref_protein.id} and {protein.id}.\nTry increasing the cutoff value.\n")     
                         
                 print("-----------------------------------------------------\n")
-
+                
+                with lock:
+                    processed_files = len(progress_list)
+                    #print(f"Progress: {processed_files}/{total_files}")
+                    print(processed_files,"/",total_files)
+                
+                del future_to_file
+                                
             except Exception as e:
+                #pass
                 print(f"Error: {e}")
     
     end = timer()
-    print(f"Total time elapsed: {end - start}\n")       
+    print(f"Total time elapsed: {end - start}\n")
+    #print(maximum_distances)       
 
-def process_file(file_path, fast):
-    try: 
-        parsed_data = pdb_parser.parse_pdb(file_path)
-        contacts, time = contacts_fast.fast_contacts(parsed_data, fast, maximum_distances=0)
-        
-        return parsed_data, contacts, time
+def process_file(file_path, fast, maximum_distances, lock, progress_list):
+
+    # Update progress list
+    with lock:
+        progress_list.append(1)
+    try:
+        if file_path.endswith(".pdb"):
+            parsed_data = pdb_parser.parse_pdb(file_path)
+        else:
+            parsed_data = pdb_parser.parse_pdbx(file_path)
+        contacts, time, maximum_distances = contacts_fast.fast_contacts(parsed_data, fast, maximum_distances)
+        return parsed_data, contacts, time, maximum_distances
+    
     except KeyError as e:
         # Handle KeyError or any other exception
         return (file_path, None, e)  # Return tuple with file_path, None result, and exception
+    
+def save_results(batch_results, batch_number):
+    # Save batch results to disk (e.g., as a file or database)
+    with open(f"batch_{batch_number}.pkl", "wb") as f:
+        pickle.dump(batch_results, f)
+
+def print_memory_usage():
+    usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0  # Convert to MB
+    print(f"Memory usage: {usage} MB")
+
+    # print("[ Top 10 memory-consuming lines ]")
+    # for stat in top_stats[:10]:
+    #     print(stat)
+    
+    
 
     # # ascending_distances = sorted(maximum_distances.items(), key=lambda x:x[1][0]) 
     # # for item in ascending_distances:
